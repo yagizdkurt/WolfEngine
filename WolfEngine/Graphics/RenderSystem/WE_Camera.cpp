@@ -1,0 +1,96 @@
+#include "WE_Camera.hpp"
+#include "WolfEngine/GameObjectSystem/WE_GameObject.hpp"
+
+void Camera::initialize(int screen_w, int screen_h) {
+    m_position    = Vec2::zero();
+    m_zoom        = 1.0f;
+    m_screenW     = screen_w;
+    m_screenH     = screen_h;
+    m_target      = nullptr;
+    m_followSpeed = 0.1f;
+}
+
+// ------------------------------------------------------------------ //
+//  Position
+// ------------------------------------------------------------------ //
+
+void Camera::setPosition(Vec2 pos)  { m_position = pos; }
+Vec2 Camera::getPosition()    const { return m_position; }
+void Camera::move(Vec2 delta)       { m_position += delta; }
+
+// ------------------------------------------------------------------ //
+//  Zoom
+// ------------------------------------------------------------------ //
+
+void  Camera::setZoom(float zoom)  { m_zoom = zoom; }
+float Camera::getZoom()      const { return m_zoom; }
+void  Camera::zoomIn(float amount) { m_zoom += amount; }
+void  Camera::zoomReset()          { m_zoom = 1.0f; }
+
+void Camera::zoomOut(float amount) {
+    m_zoom -= amount;
+    if (m_zoom < 0.1f) m_zoom = 0.1f;
+}
+
+// ------------------------------------------------------------------ //
+//  Follow
+// ------------------------------------------------------------------ //
+
+void Camera::setTarget(GameObject* target, float speed) {
+    m_target      = target;
+    m_followSpeed = speed;
+}
+
+void Camera::clearTarget() { m_target = nullptr; }
+
+void Camera::follow(Vec2 target)                    { m_position = target; }
+void Camera::followSmooth(Vec2 target, float speed) { m_position = lerp(m_position, target, speed); }
+
+void Camera::followTick() {
+    if (!m_target) return;
+
+    Vec2 target_pos = m_target->transform.position;
+
+    if (m_followSpeed <= 0.0f)
+        follow(target_pos);
+    else
+        followSmooth(target_pos, m_followSpeed);
+}
+
+// ------------------------------------------------------------------ //
+//  World <-> Screen
+// ------------------------------------------------------------------ //
+
+Vec2 Camera::worldToScreen(Vec2 world_pos) const {
+    float half_w = m_screenW * 0.5f;
+    float half_h = m_screenH * 0.5f;
+    return {
+        (world_pos.x - m_position.x) * m_zoom + half_w,
+        (world_pos.y - m_position.y) * m_zoom + half_h
+    };
+}
+
+Vec2 Camera::screenToWorld(Vec2 screen_pos) const {
+    float half_w = m_screenW * 0.5f;
+    float half_h = m_screenH * 0.5f;
+    return {
+        (screen_pos.x - half_w) / m_zoom + m_position.x,
+        (screen_pos.y - half_h) / m_zoom + m_position.y
+    };
+}
+
+bool Camera::isVisible(Vec2 world_pos, float margin) const {
+    Vec2 screen = worldToScreen(world_pos);
+    return screen.x >= -margin && screen.x <= m_screenW + margin &&
+           screen.y >= -margin && screen.y <= m_screenH + margin;
+}
+
+// ------------------------------------------------------------------ //
+//  Reset
+// ------------------------------------------------------------------ //
+
+void Camera::reset() {
+    m_position = Vec2::zero();
+    m_zoom     = 1.0f;
+    m_target   = nullptr;
+}

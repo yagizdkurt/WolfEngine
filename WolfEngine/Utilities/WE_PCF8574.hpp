@@ -1,0 +1,59 @@
+#pragma once
+#include "WE_I2C.hpp"
+// ─────────────────────────────────────────────────────────────
+//  PCF8574 — 8-bit I/O expander
+//
+//  Address: 0x20–0x27  (A2 A1 A0 pins)
+//  The chip has no registers: one byte = port state.
+//  Pins are quasi-bidirectional: write 1 to read, write 0 to drive low.
+// ─────────────────────────────────────────────────────────────
+
+class PCF8574 {
+public:
+    explicit PCF8574(uint8_t addr = 0x20) : _addr(addr), _state(0xFF) {}
+
+    // Write all 8 pins at once
+    esp_err_t write(uint8_t pins) {
+        _state = pins;
+        return I2CManager::write(_addr, &_state, 1);
+    }
+
+    // Read all 8 pins (pull pins high first to read them)
+    esp_err_t read(uint8_t& pins) {
+        return I2CManager::read(_addr, &pins, 1);
+    }
+
+    // Set individual pin HIGH (1 = input/high-Z, readable)
+    esp_err_t pinHigh(uint8_t pin) {
+        _state |=  (1 << pin);
+        return I2CManager::write(_addr, &_state, 1);
+    }
+
+    // Drive individual pin LOW (output)
+    esp_err_t pinLow(uint8_t pin) {
+        _state &= ~(1 << pin);
+        return I2CManager::write(_addr, &_state, 1);
+    }
+
+    // Toggle individual pin
+    esp_err_t pinToggle(uint8_t pin) {
+        _state ^= (1 << pin);
+        return I2CManager::write(_addr, &_state, 1);
+    }
+
+    // Read a single pin (returns 0 or 1, negative on error)
+    int pinRead(uint8_t pin) {
+        // Set pin high so it can be read
+        pinHigh(pin);
+        uint8_t val = 0;
+        esp_err_t err = I2CManager::read(_addr, &val, 1);
+        if (err != ESP_OK) return -1;
+        return (val >> pin) & 1;
+    }
+
+    uint8_t cachedState() const { return _state; }
+
+private:
+    uint8_t _addr;
+    uint8_t _state;  // shadow register to avoid read-modify-write bus traffic
+};
