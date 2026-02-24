@@ -34,7 +34,7 @@
 #include "WolfEngine/Settings/WE_RenderLayers.hpp"
 
 // =============== Sprite Component ================
-#include "WolfEngine/ComponentSystem/Components/WE_Comp_Sprite.hpp"
+#include "WolfEngine/ComponentSystem/Components/WE_Comp_SpriteRenderer.hpp"
 
 // =============== Driver Selection ================
 #include "WolfEngine/Graphics/RenderSystem/DisplayDrivers/WE_Display_Driver.hpp"
@@ -55,13 +55,13 @@ private:
     void render();
     void drawGame();
 
-    void registerSprite  (Sprite* sprite, int layer);
-    void unregisterSprite(Sprite* sprite, int layer);
+    void registerSprite  (SpriteRenderer* sprite, int layer);
+    void unregisterSprite(SpriteRenderer* sprite, int layer);
 
     DisplayDriver* m_driver;
     uint16_t       m_framebuffer[RENDER_SCREEN_WIDTH * RENDER_SCREEN_HEIGHT];
-    Sprite*        m_layers[RENDER_POOL_LAYERS][MAX_GAME_OBJECTS];
+    SpriteRenderer* m_layers[RENDER_POOL_LAYERS][MAX_GAME_OBJECTS];
 
     friend class WolfEngine;
-    friend class Sprite;
+    friend class SpriteRenderer;
 };

@@ -1,5 +1,5 @@
 #include "WolfEngine/Graphics/RenderSystem/WE_RenderCore.hpp"
-#include "WolfEngine/Graphics/RenderSystem/WE_SpriteData.hpp"
+#include "WolfEngine/Graphics/SpriteSystem/WE_SpriteData.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
 #include "WolfEngine/WolfEngine.hpp"
 #include <string.h>
@@ -22,7 +22,7 @@ void Renderer::initialize() {
 //  the sprite pointer. Called automatically by Sprite constructor
 //  via WolfEngine::getInstance().renderer.registerSprite()
 // -------------------------------------------------------------
-void Renderer::registerSprite(Sprite* sprite, int layer) {
+void Renderer::registerSprite(SpriteRenderer* sprite, int layer) {
     for (int i = 0; i < MAX_GAME_OBJECTS; i++) {
         if (m_layers[layer][i] == nullptr) {
             m_layers[layer][i] = sprite;
@@ -38,7 +38,7 @@ void Renderer::registerSprite(Sprite* sprite, int layer) {
 //  Called automatically by Sprite destructor
 //  via WolfEngine::getInstance().renderer.unregisterSprite()
 // -------------------------------------------------------------
-void Renderer::unregisterSprite(Sprite* sprite, int layer) {
+void Renderer::unregisterSprite(SpriteRenderer* sprite, int layer) {
     for (int i = 0; i < MAX_GAME_OBJECTS; i++) {
         if (m_layers[layer][i] == sprite) {
             m_layers[layer][i] = nullptr;
@@ -117,7 +117,7 @@ void Renderer::drawGame() {
     for (int layer = LAYER_BACKGROUND; layer < LAYER_UI; layer++) {
         for (int i = 0; i < MAX_GAME_OBJECTS; i++) {
 
-            Sprite* sprite = m_layers[layer][i];
+            SpriteRenderer* sprite = m_layers[layer][i];
             if (!sprite) continue;
 
             SpriteData data = sprite->getRenderData();

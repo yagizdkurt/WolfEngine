@@ -11,6 +11,9 @@
 // ======= Game Object System ========
 #include "WolfEngine/GameObjectSystem/WE_GORegistry.hpp"
 
+// ======= Component System ========
+#include "WolfEngine/ComponentSystem/Components/WE_Components.hpp"
+
 // ======= Graphics System ========
 #include "WolfEngine/Graphics/RenderSystem/WE_RenderCore.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
