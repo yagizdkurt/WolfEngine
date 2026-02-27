@@ -1,11 +1,19 @@
 #include "WolfEngine.hpp"
 #include "esp_timer.h"
+#include "WolfEngine/Utilities/WE_I2C.hpp"
 
 void WolfEngine::StartEngine() {
-    renderer.initialize();
+    // Driver initialization
+    I2CManager::begin();
+
+    // Engine subsystem initialization
+    m_InputManager.init();
+    m_renderer.initialize();
     m_Camera.initialize();
-    m_UIManager.initialize(renderer.m_framebuffer, RENDER_SCREEN_WIDTH, RENDER_SCREEN_HEIGHT);
+    m_UIManager.initialize(m_renderer.m_framebuffer, RENDER_SCREEN_WIDTH, RENDER_SCREEN_HEIGHT);
     m_SoundManager.Initialize();
+
+    // default initializations for convenience
     BaseUIElement **defaultUI = new BaseUIElement*[1] { nullptr };
     UI().setElements(defaultUI);
 }
@@ -45,5 +53,5 @@ void WolfEngine::gameTick() {
     m_Camera.followTick();
 
     // Render the scene
-    renderer.render();
+    m_renderer.render();
 }

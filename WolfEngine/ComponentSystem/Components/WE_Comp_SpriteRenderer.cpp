@@ -9,10 +9,10 @@ SpriteRenderer::SpriteRenderer(GameObject* owner, const Sprite* sprite, const ui
     , m_layer   (layer)
 {
     type = COMP_SPRITE;
-    Engine().renderer.registerSprite(this, layer);
+    RenderSys().registerSprite(this, layer);
 }
 
-SpriteRenderer::~SpriteRenderer() { Engine().renderer.unregisterSprite(this, m_layer); }
+SpriteRenderer::~SpriteRenderer() { RenderSys().unregisterSprite(this, m_layer); }
 
 SpriteData SpriteRenderer::getRenderData() const {
     SpriteData data;

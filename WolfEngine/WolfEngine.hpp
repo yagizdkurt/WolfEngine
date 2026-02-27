@@ -6,10 +6,12 @@
 // =============== ENGINE INCLUDES ================
 // ======= Settings and Constants ==========
 #include "WolfEngine/Settings/WE_Settings.hpp"
-#include "WolfEngine/Core/WE_Constants.hpp"
 
-// ======= Game Object System ========
+// ======= Low Level Systems ========
 #include "WolfEngine/GameObjectSystem/WE_GORegistry.hpp"
+
+// ======= SUBSYSTEMS ========
+#include "WolfEngine/InputSystem/WE_InputManager.hpp"
 
 // ======= Component System ========
 #include "WolfEngine/ComponentSystem/Components/WE_Components.hpp"
@@ -24,7 +26,7 @@
 #include "WolfEngine/Sound/WE_SoundManager.hpp"
 
 // ======= Input System ========
-#include "WolfEngine/Core/WE_InputManager.hpp"
+#include "WolfEngine/InputSystem/WE_InputManager.hpp"
 
 class WolfEngine final {
 public:
@@ -32,7 +34,7 @@ public:
 
     void StartEngine();
     void StartGame();
-    Renderer renderer;
+    Renderer m_renderer;
     Camera m_Camera;
     InputManager m_InputManager;
     UIManager m_UIManager;
@@ -43,7 +45,7 @@ private:
     bool m_isRunning = false;
     void gameTick();
     WolfEngine() : 
-    renderer(GetDriver()),
+    m_renderer(GetDriver()),
     m_Camera(),
     m_InputManager(),
     m_SoundManager()
@@ -59,3 +61,4 @@ inline Camera& MainCamera()                 { return WolfEngine::getInstance().m
 inline InputManager& Input()                { return WolfEngine::getInstance().m_InputManager; }
 inline UIManager& UI()                      { return WolfEngine::getInstance().m_UIManager; }
 inline SoundManager& Sound()                { return WolfEngine::getInstance().m_SoundManager; }
+inline Renderer& RenderSys()                { return WolfEngine::getInstance().m_renderer; }

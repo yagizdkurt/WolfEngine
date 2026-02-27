@@ -18,40 +18,92 @@ Never include this in any of your files. Include WolfEngine.hpp instead.
 
 // =================== INPUT SETTINGS =======================
 // QUICK SETUP:
-//   1. If buttons are wired directly to the ESP32, fill in gpioPins below.
-//   2. If buttons are routed through a PCF8574, set INPUT_PCF8574_ADDR to the
-//      chip's 7-bit address and fill in expanderPins instead.
-//   3. Set unused pins to -1 to disable them entirely.
-//   4. Joystick axes are always direct GPIO (ADC) — the PCF8574 is digital only.
+//   1. Set enabled = true for each controller slot you are using (up to 4).
+//
+//   2. Assign ESP32 GPIO pins in gpioPins for buttons wired directly to the ESP32.
+//
+//   3. If buttons are routed through an I/O expander, set expander.type to the
+//      correct chip, expander.addr to its I2C address, and fill in expander.pins.
+//
+//   4. Set unused pins to -1 to disable them entirely.
+//
+//   5. If using a joystick, set joyXEnabled/joyYEnabled to true and assign
+//      the correct ADC channels and calibration values.
+//
+//   6. debounceMs and pollIntervalMs apply to all controllers globally.
 // ──────────────────────────────────────────────────────────────────────────────
 
 constexpr InputSettings INPUT_SETTINGS = {
-    // Button count is set in InputSettings struct itself in WE_InputSettings.hpp, not here.
+    .debounceMs     = 20,
 
-                        // A    B    C    D    E    F    K
-    .gpioPins        = {  27,  -1,  -1,  -1,  -1,  -1,  -1 }, 
+    .pollIntervalMs = 10,
 
-    .pcf8574Addr    = -1, // Set to -1 to disable expander support entirely.
+    // ----------------- CONTROLLERS -----------------
+    // Configuration for up to 4 controllers (players 1–4).
+    .controllers    = {
 
-                        // A    B    C    D    E    F    K
-    .expanderPins    = {  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+        {   // -------------- CONTROLLER 1 --------------
+            .enabled     = true,
+                           // A    B    C    D    E    F    G    H    I    J
+            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+            .expander    = { ExpanderType::PCF8574, 0x20, {0,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+            .joyXEnabled = true,
+            .joyYEnabled = true,
+            .joyXChannel = ADC_CHANNEL_0,
+            .joyYChannel = ADC_CHANNEL_1,
+            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+            .joyDeadzone = 0.1f,
+            .activeLow   = true,
+        },
+    
+        {   // ------------- CONTROLLER 2 --------------
+            .enabled     = true,
+                           // A    B    C    D    E    F    G    H    I    J
+            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+            .expander    = { ExpanderType::PCF8574, 0x20, {1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+            .joyXEnabled = false,
+            .joyYEnabled = false,
+            .joyXChannel = ADC_CHANNEL_0,
+            .joyYChannel = ADC_CHANNEL_0,
+            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+            .joyDeadzone = 0.1f,
+            .activeLow   = true,
+        },
 
-    .joyXEnabled  = true,
-    .joyXChannel  = ADC_CHANNEL_0,
-    .joyXMin      = 0,
-    .joyXMax      = 4095,
-    .joyXCenter   = 2048,
+        {   // ------------- CONTROLLER 3 --------------
+            .enabled     = false,
+                           // A    B    C    D    E    F    G    H    I    J
+            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+            .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+            .joyXEnabled = false,
+            .joyYEnabled = false,
+            .joyXChannel = ADC_CHANNEL_0,
+            .joyYChannel = ADC_CHANNEL_0,
+            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+            .joyDeadzone = 0.1f,
+            .activeLow   = true,
+        },
 
-    .joyYEnabled  = false,
-    .joyYChannel  = ADC_CHANNEL_0,  // ignored when joyYEnabled is false
-    .joyYMin      = 0,
-    .joyYMax      = 4095,
-    .joyYCenter   = 2048,
+        {   // ------------- CONTROLLER 4 --------------
+            .enabled     = false,
+                           // A    B    C    D    E    F    G    H    I    J
+            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+            .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+            .joyXEnabled = false,
+            .joyYEnabled = false,
+            .joyXChannel = ADC_CHANNEL_0,
+            .joyYChannel = ADC_CHANNEL_0,
+            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+            .joyDeadzone = 0.1f,
+            .activeLow   = true,
+        },
 
-    .joyDeadzone     = 0.1f,
-    .activeLow       = true,
-    .debounceMs      = 20,
-    .pollIntervalMs  = 10
+    }
+
 };
 
 #pragma endregion

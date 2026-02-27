@@ -21,6 +21,10 @@ constexpr int _isqrt(int n) {
 //  Sprite::Create automatically deduces the size from the array,
 //  enforces that it is a perfect square, and enforces that
 //  the side length is a valid size (1, 3, 5, 7, ... 65).
+//
+//  NOTE: Pixel arrays must be declared as separate constexpr variables.
+//  Inline initializer lists are not supported — the pixel pointer would
+//  dangle and the size cannot be deduced at compile time.
 // =============================================================
 struct Sprite {
     const uint8_t* pixels;

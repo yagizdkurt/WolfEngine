@@ -25,8 +25,6 @@
 //                Retains last drawn content until marked dirty again.
 // =============================================================
 
-// =============== Constant Definitions ================
-#include "WolfEngine/Core/WE_Constants.hpp"
 
 // =============== Engine Settings ================
 #include "WolfEngine/Settings/WE_Settings.hpp"
