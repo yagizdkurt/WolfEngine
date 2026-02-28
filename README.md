@@ -13,8 +13,8 @@ Built with PlatformIO and ESP-IDF. No Unity. No Godot. Just you, your ESP32, and
 ## ✨ What It Can Do
 
 - 🎮 **GameObject & Component system** — component-based GameObjects with a clean `Start()` / `Update()` lifecycle. Transform is built in, attach components to build your dreams.
-- 🧩 **Component system** — build GameObjects by attaching components. Transform is built in, Sprite snaps on with one line, and the system is designed to grow with your game.
 - 🖼️ **Sprite rendering** — palette-indexed pixel art with rotation, layer-based draw order, and automatic registration with the renderer. Four snap rotations (0°, 90°, 180°, 270°) applied per-pixel at draw time with zero matrix math overhead. Sprites outside the visible area are culled before drawing.
+- 🎬 **Animation** — frame-by-frame sprite animation via the `Animator` component. Supports pause, resume, runtime frame swapping, and configurable playback speed — all at zero heap cost.
 - 🎨 **Palette system** — 5 built-in palettes (Grayscale, Warm, Cool, GameBoy, Sunset), each with 31 usable colors. Swap palettes at runtime for damage flash, color variants, day/night effects — it's just a pointer swap. Custom palettes are supported!
 - 🕹️ **Input & Multiplayer** — up to 4 simultaneous local controllers, each independently configured with its own buttons, joystick, and I2C expander. Buttons via direct GPIO or expanders (PCF8574, PCF8575, MCP23017), analog joystick with calibration and dead zone, software debouncing built in.
 - 🔊 **Sound** — supports 2 seperate buzzers for music and sfx. Has note system built in. Using PWM to generate 8bit style musics and sfx. Looping and callbacks included!
