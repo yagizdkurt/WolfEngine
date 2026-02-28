@@ -130,8 +130,11 @@ void Renderer::drawGame() {
 //  Master render function called every frame by WolfEngine.
 // -------------------------------------------------------------
 void Renderer::render() {
-    std::fill(m_framebuffer, m_framebuffer + m_driver->screenWidth * m_driver->screenHeight, RENDER_SETTINGS.defaultBackgroundPixel); // 1. Clear framebuffer to background color
-    drawGame(); // 2. Draw game region — always
+    
+    if constexpr (RENDER_SETTINGS.cleanFramebufferEachFrame) 
+        std::fill(m_framebuffer, m_framebuffer + m_driver->screenWidth * m_driver->screenHeight, RENDER_SETTINGS.defaultBackgroundPixel);
+    
+    if constexpr (RENDER_SETTINGS.spriteSystemEnabled) drawGame(); // 2. Draw game region
 
     // 3. Draw UI region — only if dirty
     bool uiDirty = UI().isDirty();

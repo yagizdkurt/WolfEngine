@@ -36,4 +36,10 @@ struct RenderSettings {
     // Explained in detail in the Region struct definition in WE_RenderSettings.hpp. 
     // This is where you set your desired game region based on your game's layout and UI needs.
     Region gameRegion;
+
+    // Set to false to disable sprite rendering. If you want set framebuffer pixels directly...
+    bool spriteSystemEnabled = true;
+
+    // Set to false to disable automatic clearing of the framebuffer each frame.
+    bool cleanFramebufferEachFrame = true;
 };

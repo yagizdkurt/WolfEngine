@@ -3,6 +3,7 @@
 #include "stdbool.h"
 #include "WolfEngine/Utilities/WE_Vector2d.hpp"
 #include "WolfEngine/ComponentSystem/Components/WE_Comp_Transform.hpp"
+#include "WolfEngine/ComponentSystem/Components/WE_BaseComp.hpp"
 
 // =============================================================
 //                  GAMEOBJECT SYSTEM
@@ -161,16 +162,30 @@ public:
 
 
     // ---------------------------------------------------------
+    //  registerComponent
+    //  For internal component use only — do not call from game code.
+    //  Components call this in their constructor to register
+    //  themselves with their owning GameObject for automatic ticking.
+    //  Calling this manually will result in undefined behavior.
+    // ---------------------------------------------------------
+    void registerComponent(Component* comp);
+
+    // ---------------------------------------------------------
     // private members and functions below — not accessible from outside and not intended for users.
     // ----------------------------------------------------------
 protected:
     GameObject();
     virtual ~GameObject();
 private:
+    static constexpr int MAX_COMPONENTS_PER_OBJECT = COMP_MAX_TYPE;
+    Component* m_components[MAX_COMPONENTS_PER_OBJECT] = {};
+    int        m_componentCount = 0;
     uint8_t  id = -1;
     bool     isValid = false;
     bool     hasStarted = false;
+    void componentTick();
     bool CreateObject();
     void callStart();
     friend class WolfEngine;
+
 };

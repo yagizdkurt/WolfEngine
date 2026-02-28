@@ -93,4 +93,5 @@ private:
     bool               m_visible  = true;
 
     friend class Renderer;
+    friend class Animator;
 };

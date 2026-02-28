@@ -45,6 +45,10 @@
 
 
 class Renderer {
+public:
+    uint16_t* getCanvas() { return m_framebuffer; }
+    int getScreenWidth() const {return (int) RENDER_SCREEN_WIDTH;}
+    int getScreenHeight() const {return (int) RENDER_SCREEN_HEIGHT;}
 private:
     Renderer(DisplayDriver* driver) : m_driver(driver) { }
 
@@ -56,9 +60,10 @@ private:
     void unregisterSprite(SpriteRenderer* sprite, int layer);
 
     DisplayDriver* m_driver;
-    uint16_t       m_framebuffer[RENDER_SCREEN_WIDTH * RENDER_SCREEN_HEIGHT];
     SpriteRenderer* m_layers[RENDER_POOL_LAYERS][MAX_GAME_OBJECTS] = { };
+    uint16_t m_framebuffer[RENDER_SCREEN_WIDTH * RENDER_SCREEN_HEIGHT];
 
     friend class WolfEngine;
     friend class SpriteRenderer;
+
 };

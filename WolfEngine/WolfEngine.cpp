@@ -42,12 +42,11 @@ void WolfEngine::gameTick() {
     // Update input states first
     m_InputManager.tick();
 
+    // Update component ticks of each object before Update() so that components can modify object state before game logic runs
+    for (GameObject* obj : m_GameObjectRegistry.gameObjects) if (obj && obj->isActive) obj->componentTick();
+
     // Update logic of each object
-    for (GameObject* obj : m_GameObjectRegistry.gameObjects) {
-        if (obj && obj->isActive) {
-            obj->Update();
-        }
-    }
+    for (GameObject* obj : m_GameObjectRegistry.gameObjects) if (obj && obj->isActive) obj->Update();
 
     // Update camera after game logic so follow targets are at their new position
     m_Camera.followTick();

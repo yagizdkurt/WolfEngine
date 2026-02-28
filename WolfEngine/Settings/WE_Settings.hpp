@@ -58,7 +58,7 @@ constexpr InputSettings INPUT_SETTINGS = {
         },
     
         {   // ------------- CONTROLLER 2 --------------
-            .enabled     = true,
+            .enabled     = false,
                            // A    B    C    D    E    F    G    H    I    J
             .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
             .expander    = { ExpanderType::PCF8574, 0x20, {1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
@@ -127,24 +127,22 @@ constexpr InputSettings INPUT_SETTINGS = {
 #define DISPLAY_ST7735
 // #define DISPLAY_CUSTOM
 
-// -------------------------------------------------------------
-//  RENDERER_SETTINGS
-//
-//  defaultBackgroundPixel — color shown anywhere no sprite covers the screen
-//  gameRegion             — rectangular area of the screen used for game rendering
-// -------------------------------------------------------------
-constexpr RenderSettings RENDER_SETTINGS = {
 
+constexpr RenderSettings RENDER_SETTINGS = {
     // Background color shown anywhere no sprite covers the screen.
-    // RGB565 format (16-bit): RRRRRGGGGGGBBBBB
-    // Common values: 0x0000 Black, 0xFFFF White, 0xF800 Red, 0x001F Blue, 0x07E0 Green
+    // RGB565 format (16-bit): RRRRRGGGGGGBBBBB , Common values: 0x0000 Black, 0xFFFF White, 0xF800 Red, 0x001F Blue, 0x07E0 Green
     .defaultBackgroundPixel = 0x0000,
 
     // Rectangular area of the screen used for game rendering. { x1, y1, x2, y2 }
-    // Camera centers to the middle of this region.
-    // Sprites are culled and clipped against this rectangle.
     // x1, y1 — top-left corner (inclusive), x2, y2 — bottom-right corner (exclusive)
-    .gameRegion = { 0, 0, 128, 108 } // 128x108 game area, leaving 20 rows for UI
+    .gameRegion = { 0, 0, 128, 108 },
+
+    // Set to false to disable sprite rendering to set framebuffer pixels directly.
+    .spriteSystemEnabled = true,
+
+    // Set to false to disable automatic clearing of the framebuffer each frame.
+    .cleanFramebufferEachFrame = true
+
 };
 
 #pragma endregion

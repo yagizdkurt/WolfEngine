@@ -33,3 +33,14 @@ void GameObject::callStart() {
         hasStarted = true;
     }
 }
+
+void GameObject::registerComponent(Component* comp) {
+    if (m_componentCount >= MAX_COMPONENTS_PER_OBJECT) return;
+    m_components[m_componentCount++] = comp;
+}
+
+void GameObject::componentTick() {
+    for (int i = 0; i < m_componentCount; i++) {
+        if (m_components[i] && m_components[i]->tickEnabled) m_components[i]->tick();
+    }
+}

@@ -6,6 +6,7 @@
 // =============== ENGINE INCLUDES ================
 // ======= Settings and Constants ==========
 #include "WolfEngine/Settings/WE_Settings.hpp"
+#include "WolfEngine/Utilities/WE_Timer.hpp"
 
 // ======= Low Level Systems ========
 #include "WolfEngine/GameObjectSystem/WE_GORegistry.hpp"
