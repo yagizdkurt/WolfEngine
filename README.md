@@ -44,6 +44,37 @@ Full documentation is available on the [Wiki](https://github.com/yagizdkurt/Wolf
 
 ---
 
+## 📊 Memory Usage
+
+WolfEngine is designed to be memory efficient. Below is the memory footprint on a standard ESP32 (320KB usable RAM, 1MB app partition).
+
+### Empty Project vs With Engine
+
+| | Empty Project | With WolfEngine | Engine Cost |
+|---|---|---|---|
+| RAM | 10.8 KB (3.3%) | 55.6 KB (17%) | +44.8 KB |
+| Flash | 160 KB (15.3%) | 240 KB (23%) | +80 KB |
+
+Empty build with just empty main:
+![Empty RAM](IconsPhotosEtc/EmptyRam.png)
+
+Build with Wolfengine initialization:
+![Engine RAM](IconsPhotosEtc/EngineRam.png)
+
+### Where does the RAM go?
+
+Of the 44.8KB the engine adds, **42.4KB is the framebuffer** (`128 × 160 × 2 bytes`). This is the unavoidable cost of driving a color display — every pixel on screen needs to live somewhere in RAM. The engine itself, all its systems, registries, and state combined cost only **~2.4KB**.
+
+### Flash-Friendly by Design
+
+Sprite pixel data, palettes, animations, and settings are all declared `constexpr` — they live in flash, not RAM. No matter how many sprites or palettes your game has, the RAM cost stays flat. Only runtime state (game objects, component data, timers) uses RAM. 
+
+### Plenty of Headroom - From 1 MB to 16 MB of flash
+
+With 17% RAM used and 23% flash used, there is substantial room for game content, assets, and logic. At 30fps with a full sprite system, input handling, UI, sound, and camera — WolfEngine leaves ~270KB of RAM free for your game. Also consider testing esp only has 1 MB of flash which most esp32 boards have 4 to 16, this leaves you alot of room for game assets.
+
+---
+
 ## 🗺️ Roadmap
 
 - [x] Multiplayer support  
