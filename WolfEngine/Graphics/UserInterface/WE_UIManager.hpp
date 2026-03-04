@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "WolfEngine/Graphics/UserInterface/UIElements/WE_UIElements.hpp"
+#include "WolfEngine/Graphics/RenderSystem/WE_RenderCore.hpp"
 
 // =============================================================
 //  WE_UIManager
@@ -26,21 +27,22 @@
 //  engine.ui.setElements(uiElements);
 // =============================================================
 
-class UIManager final {
+class Renderer;
+class UIManager {
 public:
     void setElements(BaseUIElement** elements); // THIS MUST BE NULL TERMINATED!!! PLEASE DONT FORGET THIS
-    void markAllDirty();
-    bool isDirty() const { return m_dirty; }
+    uint16_t* getFramebuffer() const { return m_framebuffer; }
+    static constexpr int SCREEN_WIDTH = Renderer::SCREEN_WIDTH;
+    static constexpr int SCREEN_HEIGHT = Renderer::SCREEN_HEIGHT;
 private:
     BaseUIElement** m_elements    = nullptr;
     uint8_t         m_count       = 0;
     uint16_t*       m_framebuffer = nullptr;
-    int16_t         m_screenW     = 0;
-    int16_t         m_screenH     = 0;
     bool            m_dirty       = false;
 
-    void initialize(uint16_t* framebuffer, int16_t screenW, int16_t screenH);
+    void initialize(uint16_t* framebuffer);
     void render();
+    bool isDirty() const { return m_dirty; }
 
     void drawChar(int16_t x, int16_t y, char c, uint16_t color);
     void drawPixel(int16_t x, int16_t y, uint16_t color);

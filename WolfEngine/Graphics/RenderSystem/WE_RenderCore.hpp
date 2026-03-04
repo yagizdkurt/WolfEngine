@@ -35,10 +35,10 @@
 #include "WolfEngine/ComponentSystem/Components/WE_Comp_SpriteRenderer.hpp"
 
 // =============== Driver Selection ================
-#include "WolfEngine/Graphics/RenderSystem/DisplayDrivers/WE_Display_Driver.hpp"
+#include "WolfEngine/Drivers/DisplayDrivers/WE_Display_Driver.hpp"
 #if defined(DISPLAY_ST7735)
     #include "esp_lcd_st7735.h"
-    #include "WolfEngine/Graphics/RenderSystem/DisplayDrivers/WE_Display_ST7735.hpp"
+    #include "WolfEngine/Drivers/DisplayDrivers/WE_Display_ST7735.hpp"
 #elif defined(DISPLAY_CUSTOM)
     #include "Display_Custom.h"
 #endif
@@ -47,8 +47,8 @@
 class Renderer {
 public:
     uint16_t* getCanvas() { return m_framebuffer; }
-    int getScreenWidth() const {return (int) RENDER_SCREEN_WIDTH;}
-    int getScreenHeight() const {return (int) RENDER_SCREEN_HEIGHT;}
+    static constexpr int SCREEN_WIDTH = RENDER_SCREEN_WIDTH;
+    static constexpr int SCREEN_HEIGHT = RENDER_SCREEN_HEIGHT;
 private:
     Renderer(DisplayDriver* driver) : m_driver(driver) { }
 

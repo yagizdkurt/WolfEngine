@@ -9,14 +9,12 @@ void UIManager::setElements(BaseUIElement** elements) {
     for (uint8_t i = 0; i < m_count; i++) {
         if (m_elements[i]) m_elements[i]->m_manager = this;
     }
-    if (m_framebuffer) markAllDirty();
+    if (m_framebuffer) m_dirty = true;
 }
 
-void UIManager::initialize(uint16_t* framebuffer, int16_t screenW, int16_t screenH) {
+void UIManager::initialize(uint16_t* framebuffer) {
     m_framebuffer = framebuffer;
-    m_screenW     = screenW;
-    m_screenH     = screenH;
-    if (m_elements) markAllDirty();
+    if (m_elements) m_dirty = true;
 }
 
 void UIManager::render() {
@@ -24,25 +22,17 @@ void UIManager::render() {
 
     for (uint8_t i = 0; i < m_count; i++) {
         BaseUIElement* element = m_elements[i];
-        if (!element || !element->isDirty()) continue;
+        if (!element ) continue;
 
         element->draw(*this);
-        element->clearDirty();
     }
 
     m_dirty = false;
 }
 
-void UIManager::markAllDirty() {
-    for (uint8_t i = 0; i < m_count; i++) {
-        if (m_elements[i]) m_elements[i]->m_dirty = true;
-    }
-    m_dirty = true;
-}
-
 void UIManager::drawPixel(int16_t x, int16_t y, uint16_t color) {
-    if (x < 0 || x >= m_screenW || y < 0 || y >= m_screenH) return;
-    m_framebuffer[y * m_screenW + x] = color;
+    if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT) return;
+    m_framebuffer[y * SCREEN_WIDTH + x] = color;
 }
 
 void UIManager::drawChar(int16_t x, int16_t y, char c, uint16_t color) {

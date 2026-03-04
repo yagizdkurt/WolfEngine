@@ -10,7 +10,7 @@ void WolfEngine::StartEngine() {
     m_InputManager.init();
     m_renderer.initialize();
     m_Camera.initialize();
-    m_UIManager.initialize(m_renderer.m_framebuffer, RENDER_SCREEN_WIDTH, RENDER_SCREEN_HEIGHT);
+    m_UIManager.initialize(m_renderer.m_framebuffer);
     m_SoundManager.Initialize();
 
     // default initializations for convenience

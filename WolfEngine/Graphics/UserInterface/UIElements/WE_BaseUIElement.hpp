@@ -35,11 +35,7 @@ public:
     void hide();
 
     // Return current visibility state.
-    bool isVisible() const;
-    // Return whether this element needs redraw.
-    bool isDirty() const;
-    // Clear dirty flag after rendering.
-    void clearDirty();
+    bool isVisible() const { return m_visible; }
 
     // Get absolute X coordinate.
     int16_t getX() const;
@@ -47,12 +43,19 @@ public:
     int16_t getY() const;
 
 protected:
+    friend class UIManager;
+    friend class UIPanel;
     const UITransform* m_transform;
     UIManager*         m_manager;
     bool               m_visible;
-    bool               m_dirty;
+    static constexpr int SCREEN_WIDTH = Renderer::SCREEN_WIDTH;
+    static constexpr int SCREEN_HEIGHT = Renderer::SCREEN_HEIGHT;
 
-    void markDirty();  // implemented in WE_BaseUIElement.cpp
+    inline void drawPixelRaw(int16_t x, int16_t y, uint16_t color) const {
+        uint16_t* fb = m_manager->getFramebuffer(); if (!fb) return;
+        if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT) return;
+        fb[y * SCREEN_WIDTH + x] = color;
+    }
 
-    friend class UIManager;
+    void markDirty() { if (m_manager) m_manager->m_dirty = true; }
 };

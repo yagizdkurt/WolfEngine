@@ -54,25 +54,6 @@ uint8_t     UIShape::getColorIndex() const { return m_state->colorIndex; }
 bool        UIShape::isFilled()      const { return m_state->filled; }
 UIShapeType UIShape::getShape()      const { return m_state->shape; }
 
-// Local memory view used to render through UIManager without modifying its interface.
-struct UIManagerMemoryView {
-    BaseUIElement** m_elements;
-    uint8_t         m_count;
-    uint16_t*       m_framebuffer;
-    int16_t         m_screenW;
-    int16_t         m_screenH;
-    bool            m_dirty;
-};
-
-static inline void drawPixelRaw(UIManager& mgr, int16_t x, int16_t y, uint16_t color) {
-    UIManagerMemoryView* mem = reinterpret_cast<UIManagerMemoryView*>(&mgr);
-
-    if (!mem->m_framebuffer) return;
-    if (x < 0 || x >= mem->m_screenW || y < 0 || y >= mem->m_screenH) return;
-
-    mem->m_framebuffer[y * mem->m_screenW + x] = color;
-}
-
 void UIShape::draw(UIManager& mgr) {
     if (!m_visible) return;
 
@@ -93,13 +74,13 @@ void UIShape::draw(UIManager& mgr) {
     switch (m_state->shape) {
     case UIShapeType::HLine:
         for (int16_t dx = 0; dx < width; ++dx) {
-            drawPixelRaw(mgr, x + dx, y, color);
+            drawPixelRaw(x + dx, y, color);
         }
         break;
 
     case UIShapeType::VLine:
         for (int16_t dy = 0; dy < height; ++dy) {
-            drawPixelRaw(mgr, x, y + dy, color);
+            drawPixelRaw(x, y + dy, color);
         }
         break;
 
@@ -108,17 +89,17 @@ void UIShape::draw(UIManager& mgr) {
         if (m_state->filled) {
             for (int16_t dy = 0; dy < height; ++dy) {
                 for (int16_t dx = 0; dx < width; ++dx) {
-                    drawPixelRaw(mgr, x + dx, y + dy, color);
+                    drawPixelRaw(x + dx, y + dy, color);
                 }
             }
         } else {
             for (int16_t dx = 0; dx < width; ++dx) {
-                drawPixelRaw(mgr, x + dx, y, color);
-                drawPixelRaw(mgr, x + dx, y + height - 1, color);
+                drawPixelRaw(x + dx, y, color);
+                drawPixelRaw(x + dx, y + height - 1, color);
             }
             for (int16_t dy = 0; dy < height; ++dy) {
-                drawPixelRaw(mgr, x, y + dy, color);
-                drawPixelRaw(mgr, x + width - 1, y + dy, color);
+                drawPixelRaw(x, y + dy, color);
+                drawPixelRaw(x + width - 1, y + dy, color);
             }
         }
         break;
