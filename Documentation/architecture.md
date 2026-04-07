@@ -45,14 +45,15 @@ image. There are no processes, no IPC, no network services.
 
 | Pattern | Where | Detail |
 |---|---|---|
-| Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C` | Accessed via global free functions (`Engine()`, `Input()`, etc.) |
+| Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C`, `WE_SaveManager` | Accessed via global free functions (`Engine()`, `Input()`, `Save()`, etc.) |
 | Entity-Component System | `GameObjectSystem` + `ComponentSystem` | Lightweight: no archetype tables, no dynamic dispatch via vtable arrays — components are owned by the GO and ticked via direct method calls |
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
-| Abstract interface | `WE_Display_Driver`, `WE_IExpander` | Lets driver selection be a compile-time `#if` in settings |
+| Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver` | Lets driver selection be a compile-time `#if` in settings or a runtime enum dispatch |
 | Dirty flag | `WEUIManager`, `BaseUIElement` | UI skips redraw when nothing has changed |
 | Triangular bitmask | `WEColliderManager` | Tracks per-pair collision state in O(n²/2) bits without a hash map |
-| Placement new | `WEController` for expander objects | Avoids heap; expander constructed in a `uint8_t` buffer sized to the largest concrete type |
-| Constexpr validation | `Sprite::Create()` | Illegal sprite dimensions caught at compile time, not runtime |
+| Placement new | `WEController` for expander objects; `WE_SaveManager` for EEPROM driver objects | Avoids heap; concrete driver constructed into a `uint8_t` buffer sized to the largest concrete type |
+| Constexpr validation | `Sprite::Create()`, `WE_SaveManager` slot guards | Illegal dimensions / slot overflow / count mismatch caught at compile time, not runtime |
+| Null-terminated config array | `WE_SAVE_EEPROMS[]` | EEPROM chip list terminates with `i2cAddr = 0x00`; chip count deduced via `constexpr` lambda |
 
 ### What is intentionally avoided (inferred)
 
@@ -72,6 +73,7 @@ app_main()
   │
   ├─ Engine().StartEngine()
   │     ├─ WEI2C::getInstance().init()
+  │     ├─ WE_SaveManager::init()          ← placement-news EEPROM drivers from WE_SAVE_EEPROMS[]
   │     ├─ DisplayDriver::initialize()
   │     ├─ WEInputManager::init()
   │     ├─ WESoundManager::init()
@@ -327,8 +329,53 @@ from `ExpanderSettings.type` at controller init time.
 | `WETime` | Wall clock + pause-aware game clock. `since()`, `elapsed()`, `check()` (auto-reset). |
 | `WETimer` | Per-object timer wrapping `WETime`. Use instead of comparing raw microseconds. |
 | `Vec2` / `IntVec2` | 2D math. `Vec2` is float; `IntVec2` is integer. `toPixel()` converts between. |
-| `WE_EEPROM24LC512` | 64 KB I²C EEPROM. Handles page-boundary writes automatically. Use for save data. |
 | `WE_Debug.h` | `DebugLog`/`DebugErr` macros. Zero-cost when `MODULE_DEBUG_ENABLED` is not defined. |
+
+---
+
+### 6.13 SaveManager
+
+**Public interface:**
+```cpp
+WE_SaveManager& Save();                        // global accessor
+
+template<typename T>
+esp_err_t write(SaveSlot slot, const T& data); // blocking write; T must be trivially copyable
+
+template<typename T>
+esp_err_t read(SaveSlot slot, T& outData);     // fast read
+
+esp_err_t erase(SaveSlot slot);                // fill slot region with 0xFF
+esp_err_t eraseAll();                          // erase all chips — never call during gameplay
+
+// Error codes returned by read():
+// WE_ERR_SAVE_EMPTY    (0x2001) — slot never written
+// WE_ERR_SAVE_CORRUPT  (0x2002) — CRC8 mismatch
+// WE_ERR_SAVE_VERSION  (0x2003) — WE_SAVE_VERSION changed
+// WE_ERR_SAVE_OVERFLOW (0x2004) — sizeof(T) > slot's defined size
+```
+
+**Key design choices:**
+- No tick — purely on-demand. No per-frame work.
+- Each EEPROM chip is instantiated via placement new into `m_driverBufs[i]` (type from `WE_SAVE_EEPROMS[i].type`). Same pattern as `WEController` + expanders.
+- Driver buffer size (`WE_EEPROM_DRIVER_BUF_SIZE`) is computed at compile time as the `sizeof` max of all registered drivers via a constexpr lambda. Individual sizes are scoped inside the lambda and disappear.
+- `WE_IEEPROMDriver*` abstract pointer is used for all chip communication — `WE_SaveManager` never calls any concrete driver method directly.
+- Slot addresses are computed per-chip by summing earlier slot sizes on the same chip. Each chip's address space starts at 0.
+- `WE_SAVE_INTEGRITY = true` (default): a 4-byte header `[magic(2) | version(1) | CRC8(1)]` is prepended to every slot. All header code is inside `if constexpr (WE_SAVE_INTEGRITY)` — setting to `false` removes it at compile time with zero overhead.
+- CRC8 is CRC-8/SMBUS (polynomial 0x07), computed over data bytes only.
+- `write<T>` builds `[header][struct bytes]` on the stack — no heap allocation.
+- `static_assert(std::is_trivially_copyable<T>::value)` rejects structs with vtables or owning pointers at compile time.
+
+**Compile-time guards (in `WE_SaveManager.hpp`):**
+- `SAVE_SLOTS` count must equal `SAVE_SLOT_COUNT` → catches add/remove mismatch
+- All slot sizes must be > 0 → catches missing `SAVE_SLOTS[]` entries
+- Total bytes per chip must not exceed `WE_GetEEPROMCapacity(type)` → catches over-allocation
+
+**Adding a new EEPROM driver (maintainer workflow):**
+1. Create `WE_EEPROMXXXXXX.hpp` inheriting `WE_IEEPROMDriver`
+2. Add enum entry to `EEPROMDriverType` + capacity to `WE_EEPROM_CAPACITIES[]` in `WE_SaveSettings.hpp`
+3. In `WE_SaveManager.hpp`: `#include` driver + add its `sizeof` inside the `WE_EEPROM_DRIVER_BUF_SIZE` lambda
+4. Add `case` to the `switch` in `WE_SaveManager::init()`
 
 ---
 
@@ -336,10 +383,10 @@ from `ExpanderSettings.type` at controller init time.
 
 | Storage | Technology | Usage |
 |---|---|---|
-| Persistent save data | 24LC512 I²C EEPROM | 64 KB, page-safe writes via `WE_EEPROM24LC512` |
+| Persistent save data | 24LC512 I²C EEPROM (or other via `WE_IEEPROMDriver`) | Up to 8 chips × 64 KB; accessed exclusively through `WE_SaveManager` |
 | Framebuffer | Static `uint16_t[]` | RGB565, `screenWidth × screenHeight` words |
 
-**EEPROM:** `writeBytes()` splits at 128-byte page boundaries with a 5 ms blocking delay per page. Avoid calling during active gameplay.
+**EEPROM:** Do NOT call `Save().write()` or `Save().eraseAll()` during gameplay — writes block for 5–20 ms per 128-byte page. Call only at safe moments (between levels, pause menu, boot). Reads are fast (~1 ms) and can be called at any time.
 
 
 ## 10. Configuration & Environment
@@ -351,11 +398,12 @@ no config files read from flash, and no over-the-air configuration.
 
 | File | Controls | Change requires |
 |---|---|---|
-| `WE_Settings.hpp` | Frame rate, MAX_GAME_OBJECTS, display target selection, feature flags | Recompile |
+| `WE_Settings.hpp` | Master include — pulls all settings headers | Recompile |
 | `WE_PINDEFS.hpp` | All GPIO numbers: SPI, I²C, audio, display DC/Reset/CS | Recompile |
 | `WE_InputSettings.hpp` | Per-controller button→pin map, expander type & address, joystick ADC channel & calibration | Recompile |
 | `WE_RenderSettings.hpp` | Background color (RGB565), game region rect, framebuffer clear flag | Recompile |
 | `WE_Layers.hpp` | `RenderLayer` enum values, `CollisionLayer` bitmask values | Recompile + update all layer assignments |
+| `WE_SaveSettings.hpp` | EEPROM chip list, slot definitions + sizes, integrity flag, magic/version constants | Recompile |
 
 ### Feature flags (in `WE_Settings.hpp`)
 

@@ -12,7 +12,8 @@ WolfEngine/
 │   ├── WE_PINDEFS.hpp             # All GPIO, SPI, I²C pin numbers
 │   ├── WE_InputSettings.hpp       # Per-controller button map, expander type, joystick ADC
 │   ├── WE_RenderSettings.hpp      # Background color, game region rect, feature flags
-│   └── WE_Layers.hpp              # RenderLayer enum + CollisionLayer bitmask enum
+│   ├── WE_Layers.hpp              # RenderLayer enum + CollisionLayer bitmask enum
+│   └── WE_SaveSettings.hpp        # Save system: EEPROM chip list, slot definitions, integrity flag
 │
 ├── GameObjectSystem/              # Entity base class and registry
 │   ├── WE_GameObject.hpp / .cpp   # Base class, factory, lifecycle, component dispatch
@@ -69,21 +70,27 @@ WolfEngine/
 │
 ├── Drivers/
 │   ├── DisplayDrivers/
-│   │   ├── WE_Display_Driver.hpp       # Abstract display interface (initialize, flush, backlight, sleep)
-│   │   ├── WE_Display_ST7735.hpp / .cpp  # Concrete: SPI @ 40 MHz, DMA flush, FreeRTOS semaphore
+│   │   ├── WE_Display_Driver.hpp         # Abstract display interface (initialize, flush, backlight, sleep)
+│   │   └── WE_Display_ST7735.hpp / .cpp  # Concrete: SPI @ 40 MHz, DMA flush, FreeRTOS semaphore
+│   ├── EepromDrivers/
+│   │   ├── WE_IEEPROMDriver.hpp          # Abstract EEPROM interface (writeBytes, readBytes, eraseAll, totalBytes)
+│   │   └── WE_EEPROM24LC512.hpp          # Concrete: 64 KB, 128-byte pages, ACK-polled write cycle
 │   └── IODrivers/
-│       ├── WE_IExpander.hpp            # Abstract expander interface (begin, pinRead)
-│       ├── WE_ExpanderDrivers.hpp      # ExpanderType enum + ExpanderSettings struct
-│       ├── WE_PCF8574.hpp              # 8-bit quasi-bidirectional expander (0x20–0x27)
-│       ├── WE_PCF8575.hpp              # 16-bit variant of PCF8574
-│       └── WE_MCP23017.hpp             # Register-based 16-bit expander, Port A + B, pull-ups
+│       ├── WE_IExpander.hpp              # Abstract expander interface (begin, pinRead)
+│       ├── WE_ExpanderDrivers.hpp        # ExpanderType enum + ExpanderSettings struct
+│       ├── WE_PCF8574.hpp                # 8-bit quasi-bidirectional expander (0x20–0x27)
+│       ├── WE_PCF8575.hpp                # 16-bit variant of PCF8574
+│       └── WE_MCP23017.hpp               # Register-based 16-bit expander, Port A + B, pull-ups
+│
+├── SaveLoadSystem/                # Persistent save data manager
+│   ├── WE_SaveManager.hpp         # Manager class: template write<T>/read<T>, compile-time slot guards
+│   └── WE_SaveManager.cpp         # init() (placement-new drivers), getSlotAddress(), erase(), eraseAll()
 │
 └── Utilities/
     ├── WE_I2C.hpp / .cpp          # I²C bus singleton: I2C_NUM_0, 400 kHz, scan, reg read/write
     ├── WE_Time.hpp / .cpp         # Wall clock + game clock (pause-aware); since/elapsed/check helpers
     ├── WE_Timer.hpp / .cpp        # Timer struct wrapping WETime; start/stop/reset/check
     ├── WE_Vector2d.hpp            # Vec2 (float) + IntVec2; full operator set; lerp, dist, fromAngle
-    ├── WE_EEPROM24LC512.hpp       # 64 KB I²C EEPROM; page-safe burst write; repeated-start read
     └── WE_Debug.h                 # DebugLog/DebugErr macros → ESP_LOGI/LOGE; no-op when disabled
     
 ```
@@ -95,9 +102,10 @@ WolfEngine/
   centralised manager was apparently removed or never finished.
 - `WE_GORegistry.hpp` declares a pointer registry but is **not wired into the engine**
   in the files read — status unclear.
-- The `Drivers/` hierarchy is a **reorganisation in progress**: the old
-  `Graphics/RenderSystem/DisplayDrivers/` path still exists in git history but was
-  deleted and replaced with `Drivers/DisplayDrivers/`.
+- `EEPROM24LC512` (concrete driver) now lives in `Drivers/EepromDrivers/` and inherits
+  `WE_IEEPROMDriver`. It is not in `Utilities/` — that listing was incorrect.
+  Do not use it directly in game code; always go through `Save()` (WE_SaveManager).
+- `WE_SaveManager` has **no tick** — it is purely on-demand. No per-frame registration needed.
 
 ## Documentation Folder:
 Documentation/

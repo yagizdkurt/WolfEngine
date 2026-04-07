@@ -36,14 +36,14 @@ Repository structure is in Structure.md for convenience to maintainers. You can 
 
 | Pattern | Where | Detail |
 |---|---|---|
-| Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C` | Accessed via global free functions (`Engine()`, `Input()`, etc.) |
+| Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C`, `WE_SaveManager` | Accessed via global free functions (`Engine()`, `Input()`, `Save()`, etc.) |
 | Entity-Component System | `GameObjectSystem` + `ComponentSystem` | Lightweight: no archetype tables, no dynamic dispatch via vtable arrays — components are owned by the GO and ticked via direct method calls |
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
-| Abstract interface | `WE_Display_Driver`, `WE_IExpander` | Lets driver selection be a compile-time `#if` in settings |
+| Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver` | Lets driver selection be decoupled from the system that uses it |
 | Dirty flag | `WEUIManager`, `BaseUIElement` | UI skips redraw when nothing has changed |
 | Triangular bitmask | `WEColliderManager` | Tracks per-pair collision state in O(n²/2) bits without a hash map |
-| Placement new | `WEController` for expander objects | Avoids heap; expander constructed in a `uint8_t` buffer sized to the largest concrete type |
-| Constexpr validation | `Sprite::Create()` | Illegal sprite dimensions caught at compile time, not runtime |
+| Placement new | `WEController` for expander objects; `WE_SaveManager` for EEPROM drivers | Avoids heap; driver constructed in a `uint8_t` buffer sized to the largest concrete type |
+| Constexpr validation | `Sprite::Create()`, `WE_SaveManager` slot guards | Illegal values caught at compile time, not runtime |
 
 - **Heap allocation:** No `new`/`delete` observed in engine code. All fixed-size arrays.
   Reason: heap fragmentation is fatal on embedded targets with limited SRAM.
@@ -59,6 +59,7 @@ app_main()
   │
   ├─ Engine().StartEngine()
   │     ├─ WEI2C::getInstance().init()          // I²C bus @ 400 kHz
+  │     ├─ WE_SaveManager::init()               // placement-news EEPROM driver(s) from WE_SAVE_EEPROMS[]
   │     ├─ DisplayDriver::initialize()           // SPI bus, ST7735 reset, init sequence
   │     ├─ WEInputManager::init()               // GPIO config for all controllers + ADC
   │     ├─ WESoundManager::init()               // LEDC timer + channels for music/SFX pins
@@ -351,8 +352,63 @@ from `ExpanderSettings.type` at controller init time.
 | `WETime` | Wall clock + pause-aware game clock. `since()`, `elapsed()`, `check()` (auto-reset). |
 | `WETimer` | Per-object timer wrapping `WETime`. Use instead of comparing raw microseconds. |
 | `Vec2` / `IntVec2` | 2D math. `Vec2` is float; `IntVec2` is integer. `toPixel()` converts between. |
-| `WE_EEPROM24LC512` | 64 KB I²C EEPROM. Handles page-boundary writes automatically. Use for save data. |
 | `WE_Debug.h` | `DebugLog`/`DebugErr` macros. Zero-cost when `MODULE_DEBUG_ENABLED` is not defined. |
+
+---
+
+### 6.13 SaveManager
+
+**Why it exists:** Provides a safe, structured API for reading and writing persistent game data to I²C EEPROM without exposing the caller to page boundaries, address arithmetic, multi-chip routing, or raw byte layouts.
+
+**Global accessor:** `Save()`
+
+**Quick setup:**
+1. Open `Settings/WE_SaveSettings.hpp`
+2. Add your EEPROM chip to `WE_SAVE_EEPROMS[]` (address + driver type)
+3. Add a named entry to the `SaveSlot` enum
+4. Add a matching `SaveSlotDef` entry in `SAVE_SLOTS[]` with the size of your struct
+
+**Public interface:**
+```cpp
+// Write — call between levels or on pause, NOT every frame
+// Blocks 5–20 ms per 128-byte page while the chip writes internally
+template<typename T>
+esp_err_t Save().write(SaveSlot slot, const T& data);
+
+// Read — fast (~1 ms), safe to call at any time
+template<typename T>
+esp_err_t Save().read(SaveSlot slot, T& outData);
+
+esp_err_t Save().erase(SaveSlot slot);   // reset one slot to 0xFF
+esp_err_t Save().eraseAll();             // erase all chips — do NOT call during gameplay
+```
+
+**Handling read results:**
+```cpp
+struct PlayerSave { int16_t health; int16_t score; uint8_t level; };
+
+PlayerSave data;
+switch (Save().read(SAVE_SLOT_PLAYER, data)) {
+    case ESP_OK:              /* use data normally */                     break;
+    case WE_ERR_SAVE_EMPTY:   /* first boot — initialise to defaults */   break;
+    case WE_ERR_SAVE_VERSION: /* save struct changed — reset or migrate */ break;
+    case WE_ERR_SAVE_CORRUPT: /* bit-flip detected — reset */             break;
+}
+```
+
+**Save struct rules:**
+- Must be a plain struct — no virtual methods, no `std::string`, no owning pointers
+- A `static_assert` at compile time rejects structs that violate this
+- `sizeof(YourStruct)` must be ≤ the `.size` you set in `SAVE_SLOTS[]`
+
+**Integrity system (on by default):**
+Each slot is prefixed with a 4-byte header: magic number, version byte, and CRC8 checksum. The header lets the engine distinguish between an uninitialised chip (first boot), a version change, and actual data corruption. Set `WE_SAVE_INTEGRITY = false` in `WE_SaveSettings.hpp` to strip all header logic at compile time if you need the bytes.
+
+**Multiple EEPROM chips:**
+Add more entries to `WE_SAVE_EEPROMS[]` (valid addresses: `0x50`–`0x57`) and set `.eepromIndex` on each slot to route it to the right chip. The chip list is null-terminated (`i2cAddr = 0x00` last).
+
+**Bumping the version:**
+When you add/remove/reorder fields in a save struct, increment `WE_SAVE_VERSION` in `WE_SaveSettings.hpp`. Old saves will return `WE_ERR_SAVE_VERSION` on the next boot instead of silently loading garbage.
 
 ---
 
@@ -446,7 +502,7 @@ from `ExpanderSettings.type` at controller init time.
 
 | Storage | Technology | Usage |
 |---|---|---|
-| Persistent save data | 24LC512 I²C EEPROM | 64 KB, page-safe writes via `WE_EEPROM24LC512` |
+| Persistent save data | I²C EEPROM via `WE_SaveManager` | Up to 8 chips × 64 KB; addressed through named slots |
 | Framebuffer | Static `uint16_t[]` | RGB565, `screenWidth × screenHeight` words |
 
 **Allocation strategy:** No `new`/`delete` is used anywhere in the engine. All
@@ -454,9 +510,7 @@ collections are fixed-size arrays sized by constants in `WE_Settings.hpp`
 (`MAX_GAME_OBJECTS`, `MAX_COLLIDERS`, etc.). This is a deliberate choice to eliminate
 heap fragmentation.
 
-**EEPROM access:** `readBytes()` uses repeated-start I²C for atomic address-then-data
-in one transaction. `writeBytes()` splits writes at 128-byte page boundaries
-automatically and waits 5 ms between pages for the write cycle.
+**EEPROM access:** Always go through `Save().read()` / `Save().write()` — do not use the raw `EEPROM24LC512` driver directly in game code. Writes block for 5–20 ms per 128-byte page; schedule them between levels or on pause, not inside `Update()`.
 
 ---
 
@@ -485,11 +539,12 @@ no config files read from flash, and no over-the-air configuration.
 
 | File | Controls | Change requires |
 |---|---|---|
-| `WE_Settings.hpp` | Frame rate, MAX_GAME_OBJECTS, display target selection, feature flags | Recompile |
+| `WE_Settings.hpp` | Master include — pulls all settings headers | Recompile |
 | `WE_PINDEFS.hpp` | All GPIO numbers: SPI, I²C, audio, display DC/Reset/CS | Recompile |
 | `WE_InputSettings.hpp` | Per-controller button→pin map, expander type & address, joystick ADC channel & calibration | Recompile |
 | `WE_RenderSettings.hpp` | Background color (RGB565), game region rect, framebuffer clear flag | Recompile |
 | `WE_Layers.hpp` | `RenderLayer` enum values, `CollisionLayer` bitmask values | Recompile + update all layer assignments |
+| `WE_SaveSettings.hpp` | EEPROM chip list, save slot names + sizes, integrity on/off, magic/version constants | Recompile |
 
 ### Feature flags (in `WE_Settings.hpp`)
 
