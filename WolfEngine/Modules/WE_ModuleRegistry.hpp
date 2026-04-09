@@ -33,6 +33,23 @@ private:
     }
 };
 
+/**
+ * @brief RAII helper that registers a single module instance before `main()`.
+ *
+ * @details Declare one file-scope `static ModuleRegistrar<T>` in the module's
+ *          `.cpp` file (inside the appropriate `#ifdef` guard).  The constructor
+ *          creates a `static T` instance — no heap allocation — and passes its
+ *          address to `ModuleRegistry::Register`.
+ *
+ * @tparam T  Concrete module type to instantiate and register; must inherit `IModule`.
+ *
+ * @note  The `static T s_instance` inside the constructor has program lifetime.
+ *        Destruction order relative to other statics is undefined — do not access
+ *        other static objects from `T`'s destructor.
+ *
+ * @warning Registering the same type twice (two `ModuleRegistrar<T>` objects for
+ *          the same `T`) will insert two separate instances into the registry.
+ */
 template<typename T> struct ModuleRegistrar {
     ModuleRegistrar() {
         static T s_instance;

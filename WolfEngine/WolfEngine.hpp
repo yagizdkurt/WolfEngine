@@ -32,8 +32,17 @@ class WolfEngine final {
 public:
     static WolfEngine& getInstance() { static WolfEngine instance; return instance; }
 
+    /**
+     * @brief Initializes all engine subsystems. Must be called once before StartGame().
+     */
     void StartEngine();
+
+    /**
+     * @brief Starts the game loop. Blocks indefinitely — never returns.
+     * @note Must be called after StartEngine().
+     */
     void StartGame();
+    
     Renderer m_renderer;
     Camera m_Camera;
     InputManager m_InputManager;

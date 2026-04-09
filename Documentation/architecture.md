@@ -3,6 +3,8 @@
 This file provides contextual information to assist AI tools in understanding the project’s design decisions and constraints, helping ensure accurate and consistent contributions.
 For comprehensive documentation intended for human readers, refer to documentation.md.
 
+- Title indexes are not important.
+
 ---
 
 ## 1. Overview
@@ -36,7 +38,6 @@ systems use fixed-size arrays.
 ---
 
 ## 3. Repository Structure
-
 Project structure is in Structure.md file. Check it to understand project structure.
 
 ---
@@ -416,15 +417,15 @@ no config files read from flash, and no over-the-air configuration.
 
 ### Settings files (all in `Settings/`)
 
-| File | Controls | Change requires |
+| File | Controls |
 |---|---|---|
-| `WE_Settings.hpp` | Master include — pulls all settings headers | Recompile |
-| `WE_Modules.hpp` | Module feature flags (`#define SaveLoadModule`, etc.) — comment out to disable | Recompile |
-| `WE_PINDEFS.hpp` | All GPIO numbers: SPI, I²C, audio, display DC/Reset/CS | Recompile |
-| `WE_InputSettings.hpp` | Per-controller button→pin map, expander type & address, joystick ADC channel & calibration | Recompile |
-| `WE_RenderSettings.hpp` | Background color (RGB565), game region rect, framebuffer clear flag | Recompile |
-| `WE_Layers.hpp` | `RenderLayer` enum values, `CollisionLayer` bitmask values | Recompile + update all layer assignments |
-| `WE_SaveSettings.hpp` | EEPROM chip list, slot definitions + sizes, integrity flag, magic/version constants | Recompile |
+| `WE_Settings.hpp` | Master include — pulls all settings headers |
+| `WE_Modules.hpp` | Module feature flags (`#define SaveLoadModule`, etc.) — comment out to disable |
+| `WE_PINDEFS.hpp` | All GPIO numbers: SPI, I²C, audio, display DC/Reset/CS |
+| `WE_InputSettings.hpp` | Per-controller button→pin map, expander type & address, joystick ADC channel & calibration |
+| `WE_RenderSettings.hpp` | Background color (RGB565), game region rect, framebuffer clear flag |
+| `WE_Layers.hpp` | `RenderLayer` enum values, `CollisionLayer` bitmask values |
+| `WE_SaveSettings.hpp` | EEPROM chip list, slot definitions + sizes, integrity flag, magic/version constants |
 
 ---
 
