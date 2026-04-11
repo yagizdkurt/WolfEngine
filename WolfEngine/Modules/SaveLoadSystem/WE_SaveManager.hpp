@@ -83,7 +83,7 @@ constexpr size_t WE_EEPROM_DRIVER_BUF_SIZE = []() constexpr -> size_t {
 class WolfEngine;
 
 
-class WE_SaveManager {
+class WE_SaveManager : public TModule<WE_SaveManager, 0> {
 public:
     // ── Write ─────────────────────────────────────────────────────────────────
     // Serializes T as raw bytes and writes it to the given slot.
@@ -178,10 +178,9 @@ public:
     uint16_t getSlotAddress(SaveSlot slot) const;
 
 private:
-    WE_SaveManager() = default;
+    WE_SaveManager() : TModule<WE_SaveManager, 0>("SaveManager") {}
     friend class WolfEngine;
-
-    void init();  // called by WolfEngine::StartEngine()
+    friend class ModuleSystem;
 
     // Placement-new buffers — sized to fit the largest concrete EEPROM driver.
     uint8_t           m_driverBufs[WE_SAVE_EEPROM_COUNT][WE_EEPROM_DRIVER_BUF_SIZE];

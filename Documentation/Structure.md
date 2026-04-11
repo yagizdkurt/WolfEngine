@@ -83,13 +83,13 @@ WolfEngine/
 │       ├── WE_PCF8575.hpp                # 16-bit variant of PCF8574
 │       └── WE_MCP23017.hpp               # Register-based 16-bit expander, Port A + B, pull-ups
 │
-├── Modules/                       # Optional engine subsystems — self-register via ModuleRegistrar<T>
-│   ├── WE_IModule.hpp             # Abstract base: GetName(), GetPriority(), OnInit/OnUpdate/OnShutdown
-│   ├── WE_ModuleRegistry.hpp      # Static registry + ModuleRegistrar<T> self-registration helper
+├── Modules/                       # Optional engine subsystems managed by ModuleSystem
+│   ├── WE_IModule.hpp             # Module base and template
+│   ├── WE_ModuleSystem.hpp        #
+│   ├── WE_ModuleSystem.cpp        # !! IMPORTANT: THIS IS WHERE MODULES ARE REGISTERED BY MAINTAINERS. !!
 │   └── SaveLoadSystem/            # Persistent save data module
-│       ├── WE_SaveManager.hpp     # IModule subclass: template write<T>/read<T>, compile-time slot guards
-│       ├── WE_SaveManager.cpp     # OnInit() (placement-new drivers), getSlotAddress(), erase(), eraseAll()
-│       ├── WE_SaveManagerModule.cpp  # Self-registration: static ModuleRegistrar<WE_SaveManager>, #ifdef SaveLoadModule
+│       ├── WE_SaveManager.hpp     # Save Manager Class
+│       ├── WE_SaveManager.cpp     #
 │       └── WE_SaveSettings.hpp    # EEPROM chip list, slot definitions, integrity flag (used by SaveManager only)
 │
 └── Utilities/
@@ -102,21 +102,9 @@ WolfEngine/
 ```
 
 **Non-obvious notes:**
-
-- `ComponentSystem/ComponentManager.hpp` is **deleted** in the current working tree.
-  The engine tick loop directly iterates component arrays on each `GameObject`. A
-  centralised manager was apparently removed or never finished.
-- `WE_GORegistry.hpp` declares a pointer registry but is **not wired into the engine**
-  in the files read — status unclear.
-- `EEPROM24LC512` (concrete driver) now lives in `Drivers/EepromDrivers/` and inherits
-  `WE_IEEPROMDriver`. It is not in `Utilities/` — that listing was incorrect.
-  Do not use it directly in game code; always go through `ModuleRegistry::Get<WE_SaveManager>()`.
-- `WE_SaveSettings.hpp` lives inside `Modules/SaveLoadSystem/`, not in `Settings/`.
-  `Settings/WE_Modules.hpp` is the only module-related file in `Settings/`.
-- `WE_SaveManager::OnUpdate()` is currently a no-op — the module registers with the
-  system for future use but does no per-frame work today.
-- To disable `WE_SaveManager` entirely: comment out `#define SaveLoadModule` in
-  `Settings/WE_Modules.hpp`. The module's `.cpp` files are not compiled or linked.
+-
+-
+-
 
 ## Documentation Folder:
 Documentation/

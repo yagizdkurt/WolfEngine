@@ -9,7 +9,7 @@
 
 // ======= Registries ========
 #include "WolfEngine/GameObjectSystem/WE_GORegistry.hpp"
-#include "WolfEngine/Modules/WE_ModuleRegistry.hpp"
+#include "WolfEngine/Modules/WE_ModuleSystem.hpp"
 
 // ======= SUBSYSTEMS ========
 #include "WolfEngine/Utilities/WE_Timer.hpp"
@@ -59,11 +59,10 @@ private:
     m_Camera(),
     m_InputManager(),
     m_SoundManager(),
-    m_ColliderManager()
+    m_ColliderManager(),
     {}
 
     friend class GameObject;
-
 };
 
 // Global accessors for convenience.

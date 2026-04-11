@@ -1,0 +1,39 @@
+#include "WE_ModuleSystem.hpp"
+#include "WE_IModule.hpp"
+#include "WolfEngine/Settings/WE_Modules.hpp"
+
+// ── Module instances ──────────────────────────────────────────────────────────
+#if defined(WE_MODULE_SAVELOAD)
+#include "SaveLoadSystem/WE_SaveManager.hpp"
+static WE_SaveManager s_saveLoad;
+#endif
+
+// ── Single list ───────────────────────────────────────────────────────────────
+static IModule* s_modules[] = {
+#if defined(WE_MODULE_SAVELOAD)
+    &s_saveLoad,
+#endif
+};
+
+static constexpr int s_count = sizeof(s_modules) / sizeof(IModule*);
+
+// ── Module lifecycle ──────────────────────────────────────────────────────────
+void ModuleSystem::InitAll() { // Sort by priority first, then init in that order
+    static bool sorted = false;
+    if (!sorted) { //Sorting is in descending order (highest priority first)
+        for (int i = 1; i < s_count; i++) {
+            IModule* key = s_modules[i];
+            int j = i - 1;
+            while (j >= 0 && s_modules[j]->Priority < key->Priority) {
+                s_modules[j + 1] = s_modules[j];
+                j--;
+            }
+            s_modules[j + 1] = key;
+        }
+        sorted = true;
+    }
+    for (int i = 0; i < s_count; i++) s_modules[i]->OnInit();
+}
+
+void ModuleSystem::UpdateAll()   { for (int i = 0; i < s_count; i++)      s_modules[i]->OnUpdate();   }
+void ModuleSystem::ShutdownAll() { for (int i = s_count - 1; i >= 0; i--) s_modules[i]->OnShutdown(); }

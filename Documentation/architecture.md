@@ -12,11 +12,9 @@ For comprehensive documentation intended for human readers, refer to documentati
 WolfEngine is a 2D game engine targeting the **ESP32** (Xtensa LX7).
 Single fixed-timestep busy-wait loop on one FreeRTOS task.
 
-**Allocation policy:** No heap in game-loop code. No heap for module instances either:
-`ModuleRegistrar<T>` stores each module as a `static T` local inside its constructor and
-passes a pointer to `ModuleRegistry`. The registry holds those pointers in a `std::vector`
-(the vector's internal buffer is the only heap allocation in the engine). All other engine
-systems use fixed-size arrays.
+**Allocation policy:** No heap anywhere in the engine. Module instances are `static`
+objects defined in `WE_ModuleSystem.cpp`; `ModuleSystem` holds a plain `static IModule*[]`
+array — no `std::vector`, no heap. All other engine systems use fixed-size arrays.
 
 **Current state:** API not yet stable.
 
@@ -52,7 +50,7 @@ image. There are no processes, no IPC, no network services.
 | Pattern | Where | Detail |
 |---|---|---|
 | Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C` | Accessed via global free functions (`Engine()`, `Input()`, etc.) |
-| Module registry + self-registration | `ModuleRegistry`, `ModuleRegistrar<T>`, `WE_Modules.hpp` | Optional subsystems register themselves at program init via a file-scope `static ModuleRegistrar<T>`; engine calls `InitAll()`/`UpdateAll()`/`ShutdownAll()` |
+| Static module system with priority dispatch | `ModuleSystem`, `WE_ModuleSystem.cpp`, `WE_Modules.hpp` | Optional subsystems are listed in `WE_ModuleSystem.cpp` under `#if defined()` guards; `ModuleSystem::InitAll()` insertion-sorts by `Priority` (descending) then calls `OnInit()` on each |
 | Entity-Component System | `GameObjectSystem` + `ComponentSystem` | Lightweight: no archetype tables, no dynamic dispatch via vtable arrays — components are owned by the GO and ticked via direct method calls |
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
 | Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver` | Lets driver selection be a compile-time `#if` in settings or a runtime enum dispatch |
@@ -64,11 +62,11 @@ image. There are no processes, no IPC, no network services.
 
 ### What is intentionally avoided
 
-- **Heap in game loop:** No `new`/`delete` in any per-frame path. All fixed-size arrays.
-  Module instances are `static` locals inside `ModuleRegistrar<T>` — no heap allocation
-  for module objects. The only heap is the `std::vector` internal buffer in `ModuleRegistry`.
-- **STL containers in engine systems:** `ModuleRegistry` is the sole use of `std::vector`.
-  All other engine systems avoid STL for code-size and heap reasons.
+- **Heap anywhere in the engine:** No `new`/`delete` in any path. Module instances are
+  file-scope `static` objects in `WE_ModuleSystem.cpp`; the module list is a plain
+  `static IModule*[]` array. No `std::vector`, no heap.
+- **STL containers:** Entirely avoided — code-size and heap reasons. No `std::vector`,
+  no `std::sort`; the module sort uses a manual insertion sort.
 
 ---
 
@@ -84,7 +82,7 @@ void StartGame();              // blocking game loop
 ```
 
 **Key dependencies:** All core subsystems (renderer, camera, input, UI, sound, colliders)
-plus `ModuleRegistry` for optional modules.
+plus `ModuleSystem` for optional modules.
 
 ---
 
@@ -324,47 +322,82 @@ from `ExpanderSettings.type` at controller init time.
 
 | File | Role |
 |---|---|
-| `Modules/WE_IModule.hpp` | Abstract base — `GetName()`, `GetPriority()`, `OnInit()`, `OnUpdate()`, `OnShutdown()` |
-| `Modules/WE_ModuleRegistry.hpp` | Static registry + `ModuleRegistrar<T>` self-registration helper |
-| `Settings/WE_Modules.hpp` | Feature flags — `#define SaveLoadModule`, etc. Comment out to strip module |
-| `Modules/<Name>/WE_<Name>Module.cpp` | One `static ModuleRegistrar<T>` per module, guarded by `#ifdef` |
+| `Modules/WE_IModule.hpp` | `IModule` base: `Name`/`Priority` public fields, private `OnInit/OnUpdate/OnShutdown`; `TModule<T, Priority>` CRTP helper |
+| `Modules/WE_ModuleSystem.hpp` | `ModuleSystem` class: declares `InitAll/UpdateAll/ShutdownAll` (only `WolfEngine` may call them) |
+| `Modules/WE_ModuleSystem.cpp` | Owns all module instances and the `IModule*[]` list; `InitAll` sorts then calls hooks |
+| `Settings/WE_Modules.hpp` | Feature flags — `#define WE_MODULE_SAVELOAD`, etc. Controls which `#if` blocks compile |
 
-**Self-registration mechanism:**
+**IModule / TModule interface:**
 ```cpp
-// In WE_SaveManagerModule.cpp:
-#include "WolfEngine/Settings/WE_Modules.hpp"
-#ifdef SaveLoadModule
-#include "WE_SaveManager.hpp"
-#include "WolfEngine/Modules/WE_ModuleRegistry.hpp"
-static ModuleRegistrar<WE_SaveManager> s_registrar;   // ← runs before main()
-#endif
+class IModule {
+public:
+    const char* const Name;
+    const int         Priority;
+private:
+    friend class ModuleSystem;
+    virtual void OnInit()     {}
+    virtual void OnUpdate()   {}
+    virtual void OnShutdown() {}
+};
+
+template<typename T, int Priority>
+class TModule : public IModule {
+public:
+    static T& Get();          // returns the singleton instance
+protected:
+    TModule(const char* name) : IModule(name, Priority) {}
+};
 ```
-`ModuleRegistrar<T>` constructor creates a `static T s_instance` (no heap) and calls
-`ModuleRegistry::Register(&s_instance)`. No edits to `WolfEngine.cpp` are required when
-adding or removing a module.
 
-**Registry API:**
+`OnInit/OnUpdate/OnShutdown` are private — only `ModuleSystem` (friended) can invoke them.
+`TModule<T, Priority>` bakes the priority into the `IModule::Priority` field at construction
+and provides the typed `Get()` accessor. The constructor is private to the subclass, preventing
+external instantiation.
+
+**WE_ModuleSystem.cpp — the single list:**
 ```cpp
-ModuleRegistry::InitAll();       // once, in StartEngine() — after core subsystems
-ModuleRegistry::UpdateAll();     // every frame, in gameTick() — before componentTick()
-ModuleRegistry::ShutdownAll();   // reverse order
-template<typename T> T* ModuleRegistry::Get<T>();   // typed lookup
+// Instance + pointer added together under the same #if guard
+#if defined(WE_MODULE_SAVELOAD)
+#include "SaveLoadSystem/WE_SaveManager.hpp"
+static WE_SaveManager s_saveLoad;
+#endif
+
+static IModule* s_modules[] = {
+#if defined(WE_MODULE_SAVELOAD)
+    &s_saveLoad,
+#endif
+};
+```
+`InitAll()` runs an insertion sort on `s_modules` by `Priority` (descending — highest first)
+before calling `OnInit()`. `UpdateAll/ShutdownAll` iterate the already-sorted array.
+No separate priority list; no STL.
+
+**ModuleSystem API** (called only by `WolfEngine`):
+```cpp
+ModuleSystem::InitAll();       // sorts by priority, then OnInit() each — once, in StartEngine()
+ModuleSystem::UpdateAll();     // OnUpdate() each — every frame in gameTick()
+ModuleSystem::ShutdownAll();   // OnShutdown() in reverse priority order
+```
+
+**Accessing a module from game code:**
+```cpp
+WE_SaveManager::Get().write(SAVE_SLOT_0, myData);
 ```
 
 **Adding a new module:**
-1. Inherit `IModule`, implement `GetName()` + `GetPriority()` + desired hooks.
-2. `#define MyModule` in `Settings/WE_Modules.hpp`.
-3. Create `WE_MyModuleModule.cpp` with `#ifdef MyModule` guard and `static ModuleRegistrar<WE_MyModule>`.
+1. Inherit `TModule<MyModule, Priority>`, implement desired hooks.
+2. `#define WE_MODULE_MYMODULE` in `Settings/WE_Modules.hpp`.
+3. In `WE_ModuleSystem.cpp`: add `static MyModule s_myModule` and `&s_myModule` to `s_modules[]` under `#if defined(WE_MODULE_MYMODULE)`.
 
 ---
 
 ### 6.14 SaveManager
 
-**Registered via:** `Modules/SaveLoadSystem/WE_SaveManagerModule.cpp`, guarded by `#ifdef SaveLoadModule`.
+**Registered via:** `WE_ModuleSystem.cpp`, guarded by `#if defined(WE_MODULE_SAVELOAD)`.
 
 **Access from game code:**
 ```cpp
-WE_SaveManager* save = ModuleRegistry::Get<WE_SaveManager>();
+WE_SaveManager& save = WE_SaveManager::Get();
 ```
 
 **Public interface:**
@@ -395,7 +428,7 @@ esp_err_t eraseAll();                          // erase all chips — never call
 - CRC8 is CRC-8/SMBUS (polynomial 0x07), computed over data bytes only.
 - `write<T>` builds `[header][struct bytes]` on the stack — no heap allocation.
 - `static_assert(std::is_trivially_copyable<T>::value)` rejects structs with vtables or owning pointers at compile time.
-- Do NOT call `write()` or `eraseAll()` during gameplay — writes block for 5–20 ms per 128-byte page. Call only at safe moments (between levels, pause menu, boot). Reads are fast (~1 ms) and can be called at any time. Always access via `ModuleRegistry::Get<WE_SaveManager>()`.
+- Do NOT call `write()` or `eraseAll()` during gameplay — writes block for 5–20 ms per 128-byte page. Call only at safe moments (between levels, pause menu, boot). Reads are fast (~1 ms) and can be called at any time. Always access via `WE_SaveManager::Get()`.
 
 **Compile-time guards (in `WE_SaveManager.hpp`):**
 - `SAVE_SLOTS` count must equal `SAVE_SLOT_COUNT` → catches add/remove mismatch

@@ -37,7 +37,7 @@ Repository structure is in Structure.md for convenience to maintainers. You can 
 | Pattern | Where | Detail |
 |---|---|---|
 | Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C` | Accessed via global free functions (`Engine()`, `Input()`, etc.) |
-| Module registry + self-registration | `ModuleRegistry`, `ModuleRegistrar<T>`, `WE_Modules.hpp` | Optional engine systems register themselves at program startup via a static `ModuleRegistrar<T>` instance; the registry calls `InitAll()`/`UpdateAll()` at the right lifecycle points |
+| Static module system with priority dispatch | `ModuleSystem`, `WE_ModuleSystem.cpp`, `WE_Modules.hpp` | Optional engine subsystems are listed in `WE_ModuleSystem.cpp` under `#if defined()` guards; `ModuleSystem` sorts them by priority and calls their lifecycle hooks at the right points |
 | Entity-Component System | `GameObjectSystem` + `ComponentSystem` | Lightweight: no archetype tables, no dynamic dispatch via vtable arrays — components are owned by the GO and ticked via direct method calls |
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
 | Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver` | Lets driver selection be decoupled from the system that uses it |
@@ -46,8 +46,8 @@ Repository structure is in Structure.md for convenience to maintainers. You can 
 | Placement new | `WEController` for expander objects; `WE_SaveManager` for EEPROM drivers | Avoids heap; driver constructed in a `uint8_t` buffer sized to the largest concrete type |
 | Constexpr validation | `Sprite::Create()`, `WE_SaveManager` slot guards | Illegal values caught at compile time, not runtime |
 
-- **Heap allocation:** The core game loop, Modules and ECS use no dynamic allocation (fixed-size arrays throughout).
-- **STL containers:** `ModuleRegistry` uses `std::vector<IModule*>` (module list only). All other engine systems avoid STL for code-size and heap reasons.
+- **Heap allocation:** No dynamic allocation anywhere in the engine. Module instances are file-scope `static` objects; the module list is a plain C array of pointers.
+- **STL containers:** Entirely avoided — no `std::vector`, no `std::sort`. The engine uses fixed-size arrays and manual algorithms throughout.
 
 ---
 
@@ -84,7 +84,7 @@ void StartGame();              // blocking game loop
 
 **Frame tick order (`gameTick()`):**
 1. `InputManager::tick()` — poll buttons / joysticks
-2. `ModuleRegistry::UpdateAll()` — tick all registered modules
+2. `ModuleSystem::UpdateAll()` — tick all registered modules
 3. `GameObject::componentTick()` for each active object — component logic before game logic
 4. `GameObject::Update()` for each active object — user game logic
 5. `ColliderManager::tick()` — collision detection + events
@@ -359,68 +359,65 @@ from `ExpanderSettings.type` at controller init time.
 
 ### 6.13 Module System
 
-**Why it exists:** Provides a zero-boilerplate way to add optional engine subsystems that need `OnInit()` / `OnUpdate()` / `OnShutdown()` hooks without touching `WolfEngine.cpp`. Modules self-register at startup via a static object; the engine calls them in a single loop.
+**Why it exists:** Provides a structured way to add optional engine subsystems that need `OnInit()` / `OnUpdate()` / `OnShutdown()` lifecycle hooks. All modules are listed in one place (`WE_ModuleSystem.cpp`) under compile-time feature flags; the engine calls them in priority order.
 
 **Key files:**
 
 | File | Role |
 |---|---|
-| `Modules/WE_IModule.hpp` | Abstract base all modules must inherit |
-| `Modules/WE_ModuleRegistry.hpp` | Static registry + `ModuleRegistrar<T>` helper |
-| `Settings/WE_Modules.hpp` | Compile-time feature flags (`#define SaveLoadModule`, etc.) |
-| `Modules/<Name>/WE_<Name>Module.cpp` | One-line self-registration per module |
+| `Modules/WE_IModule.hpp` | `IModule` base all modules must inherit; `TModule<T, Priority>` CRTP helper |
+| `Modules/WE_ModuleSystem.hpp` | `ModuleSystem` class with `InitAll/UpdateAll/ShutdownAll` |
+| `Modules/WE_ModuleSystem.cpp` | All module instances and the pointer list live here |
+| `Settings/WE_Modules.hpp` | Compile-time feature flags (`#define WE_MODULE_SAVELOAD`, etc.) |
 
-**`IModule` interface:**
+**`TModule<T, Priority>` — base for all modules:**
 ```cpp
-class IModule {
+// Inherit this instead of IModule directly.
+// Priority: higher value = initialised first, shutdown last.
+template<typename T, int Priority>
+class TModule : public IModule {
 public:
-    virtual const char* GetName()     const = 0;
-    virtual int         GetPriority() const = 0;  // reserved — not yet used for ordering
+    static T& Get();   // returns the one instance
+protected:
+    TModule(const char* name);
     virtual void OnInit()     {}
     virtual void OnUpdate()   {}
     virtual void OnShutdown() {}
 };
 ```
 
-**`ModuleRegistry` — static registry:**
+**`ModuleSystem` — called only by the engine:**
 ```cpp
-ModuleRegistry::Register(IModule*);   // called automatically by ModuleRegistrar<T>
-ModuleRegistry::InitAll();            // called once in StartEngine()
-ModuleRegistry::UpdateAll();          // called once per frame in gameTick()
-ModuleRegistry::ShutdownAll();        // called in reverse registration order
-
-template<typename T>
-T* ModuleRegistry::Get<T>();          // retrieve a module by type at runtime
+ModuleSystem::InitAll();       // sorts by priority (descending), then OnInit() — once in StartEngine()
+ModuleSystem::UpdateAll();     // OnUpdate() each module — once per frame in gameTick()
+ModuleSystem::ShutdownAll();   // OnShutdown() in reverse priority order
 ```
-
-**`ModuleRegistrar<T>` — self-registration:**
-```cpp
-// In your module's .cpp file:
-static ModuleRegistrar<MyModule> s_registrar;
-```
-When the translation unit is loaded, `s_registrar`'s constructor creates a `static T s_instance` (no heap allocation) and calls `ModuleRegistry::Register(&s_instance)`. No changes to `WolfEngine.cpp` are needed.
 
 **Adding a new module — step by step:**
-1. Create your class inheriting `IModule` (implement `GetName()`, `GetPriority()`, and whichever hooks you need).
+1. Create your class inheriting `TModule<MyModule, Priority>` and implement whichever hooks you need.
 2. Add a feature flag in `Settings/WE_Modules.hpp`:
    ```cpp
-   #define MyNewModule
+   #define WE_MODULE_MYMODULE
    ```
-3. Create a thin `WE_MyNewModuleModule.cpp`:
+3. In `WE_ModuleSystem.cpp`, add your instance and pointer under the same guard:
    ```cpp
-   #include "WolfEngine/Settings/WE_Modules.hpp"
-   #ifdef MyNewModule
-   #include "WE_MyNewModule.hpp"
-   #include "WolfEngine/Modules/WE_ModuleRegistry.hpp"
-   static ModuleRegistrar<WE_MyNewModule> s_registrar;
+   #if defined(WE_MODULE_MYMODULE)
+   #include "MyModule/WE_MyModule.hpp"
+   static WE_MyModule s_myModule;
    #endif
-   ```
-4. Comment out the `#define` in `WE_Modules.hpp` to disable the module entirely — it will not be compiled or linked.
 
-**Retrieving a module from game code:**
+   static IModule* s_modules[] = {
+   #if defined(WE_MODULE_MYMODULE)
+       &s_myModule,
+   #endif
+       // ...
+   };
+   ```
+4. Comment out the `#define` in `WE_Modules.hpp` to disable the module — it will not be compiled or linked.
+
+**Accessing a module from game code:**
 ```cpp
-auto* save = ModuleRegistry::Get<WE_SaveManager>();
-if (save) save->write(SAVE_SLOT_0, myData);
+WE_SaveManager::Get().write(SAVE_SLOT_0, myData);
 ```
 
 ---
@@ -429,10 +426,10 @@ if (save) save->write(SAVE_SLOT_0, myData);
 
 **Why it exists:** Provides a safe, structured API for reading and writing persistent game data to I²C EEPROM without exposing the caller to page boundaries, address arithmetic, multi-chip routing, or raw byte layouts.
 
-**Registered as a module via:** `Modules/SaveLoadSystem/WE_SaveManagerModule.cpp` (guarded by `#ifdef SaveLoadModule` in `WE_Modules.hpp`).
+**Registered as a module via:** `WE_ModuleSystem.cpp` (guarded by `#if defined(WE_MODULE_SAVELOAD)`).
 
 **Quick setup:**
-1. Enable in `Settings/WE_Modules.hpp`: `#define SaveLoadModule`
+1. Enable in `Settings/WE_Modules.hpp`: `#define WE_MODULE_SAVELOAD`
 2. Open `Settings/WE_SaveSettings.hpp`
 3. Add your EEPROM chip to `WE_SAVE_EEPROMS[]` (address + driver type)
 4. Add a named entry to the `SaveSlot` enum
@@ -440,7 +437,7 @@ if (save) save->write(SAVE_SLOT_0, myData);
 
 **Accessing from game code:**
 ```cpp
-WE_SaveManager* save = ModuleRegistry::Get<WE_SaveManager>();
+WE_SaveManager& save = WE_SaveManager::Get();
 ```
 
 **Public interface:**
@@ -463,8 +460,7 @@ esp_err_t eraseAll();              // erase all chips — do NOT call during gam
 struct PlayerSave { int16_t health; int16_t score; uint8_t level; };
 
 PlayerSave data;
-auto* save = ModuleRegistry::Get<WE_SaveManager>();
-switch (save->read(SAVE_SLOT_0, data)) {
+switch (WE_SaveManager::Get().read(SAVE_SLOT_0, data)) {
     case ESP_OK:              /* use data normally */                     break;
     case WE_ERR_SAVE_EMPTY:   /* first boot — initialise to defaults */   break;
     case WE_ERR_SAVE_VERSION: /* save struct changed — reset or migrate */ break;
@@ -500,8 +496,8 @@ When you add/remove/reorder fields in a save struct, increment `WE_SAVE_VERSION`
       → debounce → update button state bitmasks
       → read ADC channels → normalise joystick axes
 
-3. ModuleRegistry::UpdateAll()
-   └─ Calls OnUpdate() on every registered module in registration order
+3. ModuleSystem::UpdateAll()
+   └─ Calls OnUpdate() on every module in priority order
       (e.g. WE_SaveManager::OnUpdate() — currently a no-op, reserved for future use)
 
 4. For each active GameObject in registry:
@@ -638,7 +634,7 @@ no config files read from flash, and no over-the-air configuration.
 
 | Flag | Module enabled |
 |---|---|
-| `SaveLoadModule` | `WE_SaveManager` — I²C EEPROM save/load system |
+| `WE_MODULE_SAVELOAD` | `WE_SaveManager` — I²C EEPROM save/load system |
 
 **Per-file debug flag:**
 
