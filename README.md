@@ -35,18 +35,6 @@ Built with PlatformIO and ESP-IDF. No Unity. No Godot. Just you, your ESP32, and
 
 Full documentation is available on the [Wiki](https://github.com/yagizdkurt/WolfEngine/wiki).
 
-| | |
-|---|---|
-| ❓  **[How To Install](Installation-&-Setup)** | Only check if you never coded before... Which is unlikely... |
-| ⚙️ **[Fast Tutorial](First-GameObject)** | For people who just want to rush B |
-| ⏩ **[Engine Settings](Settings)** | Configure frame rate, background color, and UI region |
-| 📌 **[Pin Setup](Pin-Definitions)** | Set up your GPIO and SPI wiring |
-| 🛰️ **[About GameObjects](GameObject)** | Learn everything about GameObjects |
-| 🎮 **[Inputs!](Input)** | How to get inputs from the controllers? |
-| 🚗 **[Your First Game Object!](First-GameObject)** | Learn how to create and move objects |
-| 🎨 **[How To Set Up Graphics?](How-To-Setup-Graphics)** | Get graphics on screen |
-| 🔉  **[How to pew pew?](Audio)** | Make the buzzer go brr |
-
 ---
 
 ## 📊 Memory Usage
