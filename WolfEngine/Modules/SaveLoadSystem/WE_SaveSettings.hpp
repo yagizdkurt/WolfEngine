@@ -43,14 +43,16 @@ constexpr uint8_t WE_SAVE_VERSION = 1;
 //   - Add the matching capacity in bytes to WE_EEPROM_CAPACITIES[] at the same index.
 // ─────────────────────────────────────────────────────────────────────────────
 enum class EEPROMDriverType : uint8_t {
-    EEPROM_24LC512 = 0,    // 64 KB, 128-byte pages, 5 ms write cycle
-    // EEPROM_24LC256 = 1, // 32 KB,  64-byte pages, 5 ms write cycle  — add driver first
-    // EEPROM_AT24C32 = 2, //  4 KB,  32-byte pages, 10 ms write cycle — add driver first
+    EEPROM_NONE = 0,        // reserved value for "no chip"
+    EEPROM_24LC512 = 1,    // 64 KB, 128-byte pages, 5 ms write cycle
+    // EEPROM_24LC256 = 2, // 32 KB,  64-byte pages, 5 ms write cycle  — add driver first
+    // EEPROM_AT24C32 = 3, //  4 KB,  32-byte pages, 10 ms write cycle — add driver first
 };
 
 // ENGINE MAINTAINERS ONLY: indexed 1:1 with EEPROMDriverType above.
 // These are the authoritative capacity values — users must not change them.
 constexpr uint32_t WE_EEPROM_CAPACITIES[] = {
+    /* EEPROM_NONE */ 0,
     /* EEPROM_24LC512 */ 65536,
     // /* EEPROM_24LC256 */ 32768,
     // /* EEPROM_AT24C32 */  4096,
@@ -70,8 +72,8 @@ constexpr uint32_t WE_GetEEPROMCapacity(EEPROMDriverType t) {
 // Capacity is derived automatically from the driver type — do not specify it.
 // ─────────────────────────────────────────────────────────────────────────────
 struct EEPROMConfig {
-    uint8_t          i2cAddr;   // 0x00 = list terminator
-    EEPROMDriverType type;
+    uint8_t          i2cAddr = 0x00;   // 0x00 = list terminator
+    EEPROMDriverType type = EEPROMDriverType::EEPROM_24LC512;
 };
 
 constexpr EEPROMConfig WE_SAVE_EEPROMS[] = {

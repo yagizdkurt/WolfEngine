@@ -85,6 +85,8 @@ class WolfEngine;
 
 class WE_SaveManager : public TModule<WE_SaveManager, 0> {
 public:
+    WE_SaveManager() : TModule<WE_SaveManager, 0>("SaveManager") {}
+
     // ── Write ─────────────────────────────────────────────────────────────────
     // Serializes T as raw bytes and writes it to the given slot.
     // T must be trivially copyable (plain structs — no vtables, no owning pointers).
@@ -177,10 +179,11 @@ public:
     // Accounts for header size and all earlier slots assigned to the same chip.
     uint16_t getSlotAddress(SaveSlot slot) const;
 
-private:
-    WE_SaveManager() : TModule<WE_SaveManager, 0>("SaveManager") {}
+private:          
     friend class WolfEngine;
     friend class ModuleSystem;
+
+    void OnInit() override;
 
     // Placement-new buffers — sized to fit the largest concrete EEPROM driver.
     uint8_t           m_driverBufs[WE_SAVE_EEPROM_COUNT][WE_EEPROM_DRIVER_BUF_SIZE];

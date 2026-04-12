@@ -1,14 +1,19 @@
 #define MODULE_DEBUG_ENABLED  // comment out to silence all SaveManager log output
 #include "WE_SaveManager.hpp"
 #include "WolfEngine/Utilities/WE_Debug.h"
+#include <new>
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  WE_SaveManager — implementation
 // ─────────────────────────────────────────────────────────────────────────────
 
-void WE_SaveManager::init() {
+void WE_SaveManager::OnInit() {
+    if constexpr (WE_SAVE_EEPROM_COUNT == 0 || WE_SAVE_EEPROMS[0].type == EEPROMDriverType::EEPROM_NONE) return;
+    
     for (uint8_t i = 0; i < WE_SAVE_EEPROM_COUNT; i++) {
         switch (WE_SAVE_EEPROMS[i].type) {
+            case EEPROMDriverType::EEPROM_NONE:
+                break;
             case EEPROMDriverType::EEPROM_24LC512:
                 new (m_driverBufs[i]) EEPROM24LC512(WE_SAVE_EEPROMS[i].i2cAddr);
                 break;
@@ -31,6 +36,8 @@ void WE_SaveManager::init() {
 }
 
 uint16_t WE_SaveManager::getSlotAddress(SaveSlot slot) const {
+    if constexpr (WE_SAVE_EEPROM_COUNT == 0 || WE_SAVE_EEPROMS[0].type == EEPROMDriverType::EEPROM_NONE) return 0;
+
     constexpr uint16_t HEADER = WE_SAVE_INTEGRITY ? 4 : 0;
     uint8_t  myChip = SAVE_SLOTS[slot].eepromIndex;
     uint16_t addr   = 0;
@@ -44,8 +51,9 @@ uint16_t WE_SaveManager::getSlotAddress(SaveSlot slot) const {
 }
 
 esp_err_t WE_SaveManager::erase(SaveSlot slot) {
-    if (static_cast<uint8_t>(slot) >= static_cast<uint8_t>(SAVE_SLOT_COUNT))
-        return ESP_ERR_INVALID_ARG;
+    if constexpr (WE_SAVE_EEPROM_COUNT == 0 || WE_SAVE_EEPROMS[0].type == EEPROMDriverType::EEPROM_NONE) return ESP_ERR_INVALID_ARG;
+
+    if (static_cast<uint8_t>(slot) >= static_cast<uint8_t>(SAVE_SLOT_COUNT)) return ESP_ERR_INVALID_ARG;
 
     constexpr uint16_t HEADER = WE_SAVE_INTEGRITY ? 4 : 0;
     uint16_t addr  = getSlotAddress(slot);
@@ -75,6 +83,8 @@ esp_err_t WE_SaveManager::erase(SaveSlot slot) {
 }
 
 esp_err_t WE_SaveManager::eraseAll() {
+    if constexpr (WE_SAVE_EEPROM_COUNT == 0 || WE_SAVE_EEPROMS[0].type == EEPROMDriverType::EEPROM_NONE) return ESP_ERR_INVALID_ARG;
+
     DebugLog("SaveManager", "erasing all %u EEPROM chip(s)...", WE_SAVE_EEPROM_COUNT);
     for (uint8_t i = 0; i < WE_SAVE_EEPROM_COUNT; i++) {
         esp_err_t err = m_eeproms[i]->eraseAll();

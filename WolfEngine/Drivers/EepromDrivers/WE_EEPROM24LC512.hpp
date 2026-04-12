@@ -14,8 +14,7 @@
 class EEPROM24LC512 : public WE_IEEPROMDriver {
 public:
     static constexpr uint16_t PAGE_SIZE      = 128;
-    static constexpr uint16_t TOTAL_BYTES    = 65536;  // 64 KB
-    static constexpr uint32_t WRITE_CYCLE_MS = 5;
+    static constexpr uint32_t TOTAL_BYTES    = 65536;  // 64 KB
 
     explicit EEPROM24LC512(uint8_t addr = 0x50) : _addr(addr) {}
 

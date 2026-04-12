@@ -8,17 +8,26 @@
 static WE_SaveManager s_saveLoad;
 #endif
 
-// ── Single list ───────────────────────────────────────────────────────────────
+// ── Module list ───────────────────────────────────────────────────────────────
 static IModule* s_modules[] = {
 #if defined(WE_MODULE_SAVELOAD)
     &s_saveLoad,
 #endif
 };
 
-static constexpr int s_count = sizeof(s_modules) / sizeof(IModule*);
 
+
+
+
+
+
+
+// ── ModuleSystem implementation ─────────────────────────────────────────────
+// Nothing to change here...
+// ── Module count ─────────────────────────────────────────────────────────────
+static constexpr int s_count = sizeof(s_modules) / sizeof(IModule*);
 // ── Module lifecycle ──────────────────────────────────────────────────────────
-void ModuleSystem::InitAll() { // Sort by priority first, then init in that order
+void ModuleSystem::InitAll() { // Sort by priority first, then get references, then init in that order
     static bool sorted = false;
     if (!sorted) { //Sorting is in descending order (highest priority first)
         for (int i = 1; i < s_count; i++) {
@@ -32,8 +41,8 @@ void ModuleSystem::InitAll() { // Sort by priority first, then init in that orde
         }
         sorted = true;
     }
+    for (int i = 0; i < s_count; i++) s_modules[i]->OnReferenceCollection();
     for (int i = 0; i < s_count; i++) s_modules[i]->OnInit();
 }
-
 void ModuleSystem::UpdateAll()   { for (int i = 0; i < s_count; i++)      s_modules[i]->OnUpdate();   }
 void ModuleSystem::ShutdownAll() { for (int i = s_count - 1; i >= 0; i--) s_modules[i]->OnShutdown(); }

@@ -59,7 +59,7 @@ private:
     m_Camera(),
     m_InputManager(),
     m_SoundManager(),
-    m_ColliderManager(),
+    m_ColliderManager()
     {}
 
     friend class GameObject;
