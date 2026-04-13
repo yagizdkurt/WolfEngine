@@ -125,7 +125,7 @@ constexpr InputSettings INPUT_SETTINGS = {
 // ==== Display Target ====
 // Define the target display for the renderer. Only one should be defined at a time.
 #define DISPLAY_ST7735
-// #define DISPLAY_CUSTOM
+// #define DISPLAY_SDL
 
 
 constexpr RenderSettings RENDER_SETTINGS = {

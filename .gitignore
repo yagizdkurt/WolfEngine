@@ -13,3 +13,8 @@
 !WolfEngine/**
 !Documentation/
 !Documentation/**
+!desktop/
+!desktop/**
+
+# Exclude build output
+desktop/build/

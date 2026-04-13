@@ -39,8 +39,8 @@
 #if defined(DISPLAY_ST7735)
     #include "esp_lcd_st7735.h"
     #include "WolfEngine/Drivers/DisplayDrivers/WE_Display_ST7735.hpp"
-#elif defined(DISPLAY_CUSTOM)
-    #include "Display_Custom.h"
+#elif defined(DISPLAY_SDL)
+    #include "Display_SDL.h"
 #endif
 
 

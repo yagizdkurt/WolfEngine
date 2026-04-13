@@ -1,6 +1,7 @@
 #pragma once
 #include "stdint.h"
 #include "stdbool.h"
+#include <type_traits>
 #include "WolfEngine/Utilities/WE_Vector2d.hpp"
 #include "WolfEngine/ComponentSystem/Components/WE_Comp_Transform.hpp"
 #include "WolfEngine/ComponentSystem/Components/WE_BaseComp.hpp"
