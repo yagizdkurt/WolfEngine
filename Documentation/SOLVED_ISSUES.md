@@ -43,3 +43,46 @@ globals, no desktop-specific code in engine source:
 - `main_desktop.cpp` calls `Engine().RequestQuit()` on ESC/quit, then
   `engineThread.join()`, then destroys SDL objects in order before returning normally.
 - `std::exit(0)` is removed entirely.
+---
+
+## WE_Settings.hpp Display Define Patched at CMake Configure Time
+RESOLVED in Phase 2 - 14.04.26
+**Location:** `Game1/src/WolfEngine/Settings/WE_Settings.hpp` — display target define block; `Game1/src/desktop/CMakeLists.txt` — configure-time patch block and include paths
+**What it did:** `WE_Settings.hpp` contained a hardcoded `#define DISPLAY_ST7735`. A
+compiler flag (`-DDISPLAY_SDL`) cannot suppress an in-source `#define`, so the desktop
+CMake worked around this by reading the header at configure time, using `string(REPLACE)`
+to swap the define, and writing the patched copy into `CMAKE_CURRENT_BINARY_DIR` where it
+was picked up first via the include path. This was fragile: any new display define added to
+the settings header would also need to be added to the regex, or the desktop build would
+silently compile with two display targets active.
+**Resolution (Phase 2):** The hardcoded define in `WE_Settings.hpp` is replaced with a
+preprocessor guard that falls back to `DISPLAY_ST7735` only when no other display driver
+flag is already defined. The desktop build now passes `DISPLAY_SDL` as a normal compile
+definition, which the guard detects:
+- `WE_Settings.hpp` lines 125–132: replaced `#define DISPLAY_ST7735` with
+  `#ifndef DISPLAY_SDL / #define DISPLAY_ST7735 / #endif`
+- `desktop/CMakeLists.txt`: removed the entire `file(READ / string(REPLACE / file(WRITE)`
+  patch block (formerly lines 11–31)
+- `desktop/CMakeLists.txt`: removed `${CMAKE_CURRENT_BINARY_DIR}` from
+  `target_include_directories` — no patched copy exists to find
+- `desktop/CMakeLists.txt`: added `DISPLAY_SDL` to `target_compile_definitions` so the
+  guard in the header correctly skips the default on desktop
+---
+
+## ESP_ERROR_CHECK Silently Swallows Errors
+RESOLVED in Phase 2 - 14.04.26
+**Location:** `desktop/stubs/esp_err.h` — `ESP_ERROR_CHECK` macro definition
+**What it did:** `ESP_ERROR_CHECK(x)` expanded to `(x)`, evaluating the expression and
+discarding the return value. Any non-`ESP_OK` result from driver or hardware init calls
+was silently ignored. Code that depended on a hard abort to surface misconfigurations
+would continue running in a broken state, masking bugs that would be immediately visible
+on hardware.
+**Resolution (Phase 2):** Macro replaced with a `do { } while(0)` block that captures
+the return value, prints a diagnostic to `stderr` with the error code, source file, and
+line number, then calls `abort()`:
+- `ESP_ERROR_CHECK(x)` now stores the result in `esp_err_t _err`, checks against
+  `ESP_OK`, and on failure emits `[ESP_ERROR_CHECK] FAILED (err=0x%x) at %s:%d` to
+  `stderr` before calling `abort()`
+- `<cstdio>` and `<cstdlib>` added to satisfy `fprintf` and `abort()`
+- All error code constants and `typedef int esp_err_t` left unchanged
+---

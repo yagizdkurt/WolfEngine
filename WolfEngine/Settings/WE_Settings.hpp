@@ -123,9 +123,14 @@ constexpr InputSettings INPUT_SETTINGS = {
 // =================== RENDERER SETTINGS =======================
 
 // ==== Display Target ====
-// Define the target display for the renderer. Only one should be defined at a time.
-#define DISPLAY_ST7735
-// #define DISPLAY_SDL
+// Define exactly one display target — do not define more than one simultaneously.
+// The default (DISPLAY_ST7735) can be overridden at build time by passing a
+// compiler flag (e.g. -DDISPLAY_SDL), which is how the desktop CMake build
+// selects its display driver.
+#ifndef DISPLAY_SDL
+    #define DISPLAY_ST7735
+    //#define DISPLAY_OTHER
+#endif
 
 
 constexpr RenderSettings RENDER_SETTINGS = {

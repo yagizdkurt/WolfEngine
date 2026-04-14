@@ -47,26 +47,6 @@ not sufficient.
 
 ---
 
-## WE_Settings.hpp Display Define Patched at CMake Configure Time
-
-**Status:** Active
-**Phase found:** Phase 1
-**Phase to fix:** TBD
-**Severity:** Medium
-**Location:** `desktop/CMakeLists.txt` — configure-time file patch
-**What it does now:** `WE_Settings.hpp` intentionally contains a user-facing
-`#define DISPLAY_ST7735` that selects the display driver at compile time. This cannot
-be overridden by a command-line `-D` flag. The desktop CMake patches a copy of the
-file to suppress `DISPLAY_ST7735` and activate `DISPLAY_CUSTOM` instead.
-**Impact:** If a new display type is added to `WE_Settings.hpp` (e.g.
-`#define DISPLAY_ILI9341`), the CMake patch regex must also suppress that new define.
-Otherwise the desktop build will break when the user switches display targets.
-**Maintenance note:** The patch logic lives in `desktop/CMakeLists.txt` in the
-configure-time `file(READ/WRITE)` block. Any new display define must be added to the
-regex there.
-
----
-
 ## FreeRTOS Stub Behaviour Differences
 
 **Status:** Deferred
@@ -91,41 +71,7 @@ introduced in Phase 3.
 
 ---
 
-## ESP_ERROR_CHECK Silently Swallows Errors
 
-**Status:** Active
-**Phase found:** Phase 1
-**Phase to fix:** TBD
-**Severity:** High
-**Location:** `desktop/stubs/esp_err.h`
-**What it does now:** `ESP_ERROR_CHECK(x)` expands to `(x)` — the return value is
-evaluated and discarded. On real hardware it calls `abort()` on any non-`ESP_OK`
-result.
-**Impact:** Initialization failures in driver setup (I2C, GPIO, ADC, LEDC) are
-completely invisible on desktop. Code that depends on a hard abort to catch
-misconfiguration will silently continue in a broken state, masking bugs that would
-be immediately obvious on hardware.
-
----
-
-## ESP_LOGD / ESP_LOGV Permanently Suppressed
-
-**Status:** Active
-**Phase found:** Phase 1
-**Phase to fix:** TBD
-**Severity:** Low
-**Location:** `desktop/stubs/esp_log.h`
-**What it does now:** `ESP_LOGD` and `ESP_LOGV` are no-ops (`do {} while(0)`). There
-is no way to enable verbose or debug log levels on desktop. All log output goes to
-`printf` on stdout.
-**Impact:** Debug-level log output that exists in the engine cannot be activated
-during desktop development. Any diagnostic instrumentation using `ESP_LOGD`/`ESP_LOGV`
-is invisible, making it harder to trace issues in subsystems designed to log at those
-levels.
-**Maintenance note:** `printf` is not atomic under concurrent writes. Log lines from
-the engine thread and any future worker threads may interleave or corrupt each other.
-
----
 
 ## esp_timer Desktop Resolution is OS-Dependent
 
@@ -214,19 +160,30 @@ on desktop.
 
 ## LEDC Duty Reads Always Return 0
 
-**Status:** Active
+**Status:** Dormant — no fade or brightness logic currently exists in the renderer
 **Phase found:** Phase 1
-**Phase to fix:** TBD
-**Severity:** Medium
+**Phase to fix:** When fade/brightness logic is added
+**Severity:** Low (medium if fade logic is added)
 **Location:** `desktop/stubs/driver/ledc.h`
 **What it does now:** `ledc_get_duty()` always returns `0` regardless of channel or
 what was previously set via `ledc_set_duty`.
-**Impact:** Any code that reads back the current duty cycle to compute a new value
-(e.g. fade logic, brightness stepping) will always start from `0` on desktop,
-producing different behaviour from hardware.
+**Impact:** No current impact. If fade or brightness stepping logic is added to the
+renderer (e.g. backlight fade-in on startup, dim on inactivity, brightness menu option),
+any code that reads back the current duty cycle via `ledc_get_duty()` to compute the
+next step will always see `0` on desktop, causing the fade to always restart from the
+bottom regardless of actual state. Behaviour will silently diverge from hardware.
+**When this becomes relevant:** The moment any of these are implemented in the renderer:
+- Backlight fade-in / fade-out
+- Brightness stepping or ramping
+- Inactivity dimming
+- A brightness setting that reads current level before adjusting
+**Fix needed at that point:** Replace the always-0 stub with a small in-memory state
+table that `ledc_set_duty()` writes to and `ledc_get_duty()` reads back from, so the
+desktop stub stays internally consistent with what was last set.
 **Maintenance note:** `ledc_fade_func_install`, `ledc_set_fade_with_time`,
-`ledc_fade_start`, and `ledc_fade_stop` are not stubbed. If the engine uses
-hardware-assisted fading, the desktop build will fail to compile.
+`ledc_fade_start`, and `ledc_fade_stop` are not stubbed. If hardware-assisted fading
+is added to the renderer, the desktop build will fail to compile with unresolved symbol
+errors. These stubs must be added at the same time as any fade logic.
 
 ---
 
