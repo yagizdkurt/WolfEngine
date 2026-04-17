@@ -12,7 +12,7 @@ find_package(SDL3 REQUIRED)
 # CONFIGURE_DEPENDS: if a .cpp is added/removed under src/WolfEngine/, CMake
 # automatically re-globs on the next build rather than silently missing it.
 file(GLOB_RECURSE ENGINE_SRCS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/../WolfEngine/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/WolfEngine/*.cpp"
 )
 
 # Exclude the ST7735 driver — it owns GetDriver() and has unresolvable
@@ -34,8 +34,8 @@ add_executable(WolfEngine_Desktop
 target_include_directories(WolfEngine_Desktop PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/stubs"                        # fake ESP-IDF headers
     "${CMAKE_CURRENT_SOURCE_DIR}"                              # desktop-specific headers (WE_SDLInputDriver.hpp etc.)
-    "${CMAKE_CURRENT_SOURCE_DIR}/.."                           # engine root (WolfEngine/ includes)
-    "${CMAKE_CURRENT_SOURCE_DIR}/../WolfEngine/Settings"       # relative includes inside WE_Settings.hpp
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src"                       # engine root (WolfEngine/ includes)
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/WolfEngine/Settings"   # relative includes inside WE_Settings.hpp
     ${SDL3_INCLUDE_DIRS}
 )
 

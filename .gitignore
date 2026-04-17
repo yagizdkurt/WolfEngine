@@ -1,11 +1,13 @@
 # Ignore everything...
 *
+
 # other than...
 # specific top-level files,
 !.gitignore
 !LICENSE
 !README.md
 !platformio.ini
+!cxx_only_flags.py
 
 # ProjectFolders
 !IconsPhotosEtc/
@@ -16,6 +18,10 @@
 !Documentation/**
 !desktop/
 !desktop/**
+
+# PlatformIO Special Folders
+!test/
+!test/**
 
 # Exclude build output
 desktop/build/

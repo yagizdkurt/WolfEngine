@@ -1,4 +1,3 @@
-#include "testgameobject.hpp"
 // Desktop entry point.
 //
 // Mirrors app_main() from src/main.cpp:
@@ -27,7 +26,6 @@ int main(int, char*[]) {
     Engine().StartEngine();
 
     // Game Logic Here:
-    GameObject::Create<TestGameObject>();
 
     std::thread engineThread([] { Engine().StartGame(); });
     while (sdl.pollEvents()) {}
