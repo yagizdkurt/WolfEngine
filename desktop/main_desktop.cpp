@@ -27,11 +27,10 @@ int main(int, char*[]) {
 
     // Game Logic Here:
 
-    std::thread engineThread([] { Engine().StartGame(); });
-    while (sdl.pollEvents()) {}
 
-    Engine().RequestQuit();
-    engineThread.join();
-    sdl.shutdown();
+    // StartGame() runs the game loop on a background thread so the main thread can own the SDL event loop.
+    std::thread engineThread([] { Engine().StartGame(); });
+    while (sdl.pollEvents()) {} // PollEvents returns false on quit event, breaking the loop and proceeding to shutdown.
+    sdl.shutdown(&engineThread, &Engine());
     return 0;
 }

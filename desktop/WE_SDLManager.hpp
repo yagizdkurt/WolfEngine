@@ -1,6 +1,8 @@
 #pragma once
 #include <SDL3/SDL.h>
+#include <thread>
 
+class WolfEngine;
 struct SDLManagerConfig {
     const char* title         = "WolfEngine Desktop";
     int         logicalWidth  = 128;
@@ -13,7 +15,7 @@ class SDLManager {
 public:
     bool init(const SDLManagerConfig& config);
     bool pollEvents();
-    void shutdown();
+    void shutdown(std::thread *engineThread = nullptr, WolfEngine* engine = nullptr);
 
 private:
     SDL_Window* window = nullptr;

@@ -2,6 +2,7 @@
 #include "stubs/WE_Display_SDL3.hpp"
 #include "WE_SDLInputDriver.hpp"
 #include <cstdio>
+#include "WolfEngine/WolfEngine.hpp"
 
 // Defined in stubs/WE_Display_SDL3.cpp — returns the concrete driver instance.
 SDL3DisplayDriver& GetSDLDriver();
@@ -48,7 +49,9 @@ bool SDLManager::pollEvents() {
     return true;
 }
 
-void SDLManager::shutdown() {
+void SDLManager::shutdown(std::thread *engineThread, WolfEngine* engine) {
+    if (engine) { engine->RequestQuit(); }
+    if (engineThread && engineThread->joinable()) { engineThread->join(); }
     GetSDLDriver().destroy();   // texture → renderer
     SDL_DestroyWindow(window);
     SDL_Quit();
