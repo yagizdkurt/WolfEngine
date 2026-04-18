@@ -10,7 +10,7 @@ WolfEngine uses a set of settings files to configure the engine before compilati
 |---------------------|--------------------------------------------------------------|
 | `WE_Settings.hpp`   | Engine-wide settings — Input, frame rate, display target, renderer |
 | `WE_PINDEFS.hpp`    | SPI and display GPIO pin assignments — see [Pin Definitions](pin-definitions.md) |
-| `WE_RenderLayers.hpp` | Layer order for sprite rendering — see [Render Layers](render-layers.md) |
+| `WE_Layers.hpp`     | Layer order for sprite/collision systems — see [Render Layers](render-layers.md) |
 
 > These files live in `WolfEngine/Settings/`. Edit them to match your hardware and project needs before building.
 
@@ -75,7 +75,9 @@ Selects which display driver the renderer compiles against. Only one should be d
 ```cpp
 constexpr RenderSettings RENDER_SETTINGS = {
     .defaultBackgroundPixel = 0x0000,
-    .gameRegion = { 0, 0, 128, 108 }
+    .gameRegion = { 0, 0, 128, 108 },
+    .spriteSystemEnabled = true,
+    .cleanFramebufferEachFrame = true
 };
 ```
 
@@ -95,5 +97,5 @@ Common values:
 
 ### gameRegion
 
-Rectangular area of the screen used for game rendering. `{ x1, y1, x2, y2 }`
+Rectangular area of the screen used for game rendering. `{ x1, y1, x2, y2 }` (`x2` and `y2` are exclusive)
 Outside this region will not be rendered per frame but will be rendered when UI gets dirty.
