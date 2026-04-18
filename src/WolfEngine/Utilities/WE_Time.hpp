@@ -29,43 +29,6 @@ public:
     static int64_t since  (int64_t timestamp) { return now()   - timestamp; }
     static int64_t sinceUs(int64_t timestamp) { return nowUs() - timestamp; }
 
-    // ---------------------------------------------------------
-    //  elapsed
-    //  Returns true if at least durationMs has passed since
-    //  the timer was last reset. Does not reset automatically.
-    //      if (WETime::elapsed(m_timer, 500)) { ... }
-    // ---------------------------------------------------------
-    static bool elapsed  (int64_t timer, int64_t durationMs) { return (now() - timer) >= durationMs; }
-    static bool elapsedUs(int64_t timer, int64_t durationUs) { return (nowUs() - timer) >= durationUs; }
-
-    // ---------------------------------------------------------
-    //  check
-    //  Returns true if durationMs has passed and resets the
-    //  timer automatically. Ideal for cooldowns and repeating
-    //  events.
-    //      if (WETime::check(m_shootCooldown, 500)) { shoot(); }
-    // ---------------------------------------------------------
-    static bool check  (int64_t& timer, int64_t durationMs);
-    static bool checkUs(int64_t& timer, int64_t durationUs);
-
-    // ---------------------------------------------------------
-    //  timeout
-    //  Returns true while durationMs has NOT yet passed.
-    //  Useful for showing something for a fixed duration:
-    //      if (WETime::timeout(m_showTimer, 2000)) { renderMessage(); }
-    // ---------------------------------------------------------
-    static bool timeout  (int64_t timer, int64_t durationMs) { return (now() - timer) < durationMs;   }
-    static bool timeoutUs(int64_t timer, int64_t durationUs) { return (nowUs() - timer) < durationUs; }
-
-    // ---------------------------------------------------------
-    //  reset
-    //  Sets the timer to current game time.
-    //      WETime::reset(m_spawnTimer);
-    // ---------------------------------------------------------
-    static void reset  (int64_t& timer) { timer = now();   }
-    static void resetUs(int64_t& timer) { timer = nowUs(); }
-
-
     // Total number of frames since engine start, excluding paused time. Useful for random seed, animation timing, etc.
     static uint32_t frameCount() { return s_frameCount; }
 

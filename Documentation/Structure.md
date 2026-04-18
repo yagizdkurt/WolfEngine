@@ -116,7 +116,7 @@ Main.cpp ── Entry point
 ```
 Documentation/
 │
-├── architecture.md      # AI-oriented context: architecture, design decisions, constraints, patterns
+├── AI_Documentation.md  # AI-oriented context: architecture, design decisions, constraints, patterns
 ├── Documentation.md     # Human-readable documentation: system overview, modules, usage, examples
 ├── Structure.md         # Project structure reference (this file)
 ├── KNOWN_ISSUES.md      # Active known issues and current limitations

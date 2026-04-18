@@ -192,7 +192,7 @@ errors. These stubs must be added at the same time as any fade logic.
 **Status:** Active
 **Phase found:** Phase 1
 **Phase to fix:** Phase 2 (Input)
-**Severity:** High
+**Severity:** Not active (Bypassed for now)
 **Location:** `desktop/stubs/esp_adc/adc_oneshot.h`
 **What it does now:** `adc_oneshot_read()` always writes `2048` to the output — the
 exact midpoint of the 12-bit range.
@@ -201,6 +201,29 @@ permanently frozen at the center/neutral value. Threshold-based input code can n
 be triggered on desktop, making analog input paths completely untestable.
 **Maintenance note:** `adc_cali_*` calibration functions are not stubbed. If the
 engine uses calibrated ADC readings, the desktop build will fail to compile.
+
+---
+
+## `adc_cali_*` Calibration Functions Not Stubbed
+
+**Status:** Active
+**Phase found:** Phase 3
+**Phase to fix:** TBD
+**Severity:** High
+**Location:** `desktop/stubs/esp_adc/` — no `adc_cali_*` stubs exist
+**What it does now:** `adc_cali_raw_to_voltage()` and related calibration functions
+have no desktop stub. If any engine code calls them, the desktop build fails to compile
+with an unresolved symbol error.
+**Impact:** Any future use of calibrated ADC readings in the engine — converting raw
+12-bit values to millivolts for more accurate joystick normalization or analog sensor
+reading — will immediately break the desktop build. The failure is a hard compile error,
+not a silent wrong value, so it will be caught quickly. However it blocks the desktop
+build entirely until a stub is added.
+**Maintenance note:** If `adc_cali_raw_to_voltage()`, `adc_cali_create_scheme_curve_fitting()`,
+or any other `adc_cali_*` function is added to the engine, a matching stub must be added
+to `desktop/stubs/esp_adc/` before the desktop build will compile. The stub can safely
+return `ESP_OK` and write a hardcoded voltage — the SDL input provider bypasses the ADC
+path entirely so the value is never used at runtime.
 
 ---
 

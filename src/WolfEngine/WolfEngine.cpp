@@ -62,4 +62,6 @@ void WolfEngine::gameTick() {
 
     // Render the scene
     m_renderer.render();
+
+    WETime::incrementFrameCount();
 }

@@ -1,4 +1,4 @@
-# Architecture
+# AI Documentation
 
 This file provides contextual information to assist AI tools in understanding the project’s design decisions and constraints, helping ensure accurate and consistent contributions.
 For comprehensive documentation intended for human readers, refer to documentation.md.
