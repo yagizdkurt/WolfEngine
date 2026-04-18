@@ -3,7 +3,7 @@ docs_dir: documentation/wiki
  
 theme:
   name: material
-  custom_dir: documentation/wiki/overrides
+  custom_dir: Documentation/Wiki/overrides
   features:
     - navigation.expand
     - search.suggest
