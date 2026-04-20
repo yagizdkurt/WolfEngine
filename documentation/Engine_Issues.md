@@ -46,6 +46,15 @@ section added. Do not delete entries from this file — strike-through is not su
 
 ---
 
+Panel Children Anchor Assumption
+Status: Active
+Severity: Medium
+Location: UIPanel.cpp — draw() offset pass-through; WE_BaseUIElement.hpp — resolveRect()
+What it is: Panel children must be constructed with UIAnchor::TopLeft for correct rendering. UIPanel::draw() passes its resolved screen position as offX/offY to each child's draw(), which adds it on top of the child's own anchor-resolved position. Any anchor other than TopLeft produces a screen-anchor origin that gets double-offset with the panel position, pushing children off-screen or to wrong positions.
+Impact: Users constructing panel children with any anchor other than UIAnchor::TopLeft will get silently wrong rendering with no error or warning. The default anchor is UIAnchor::Center, so any panel child created without explicitly specifying UIAnchor::TopLeft will be incorrectly positioned. This is a footgun in the public API.
+Maintenance note: The correct long-term fix is to have UIPanel::draw() bypass anchor resolution entirely for children — either by forcing TopLeft on children before calling draw(), or by passing absolute screen coordinates directly and having child draw() accept a pre-resolved position rather than re-resolving from their transform. Until fixed, any documentation or examples involving panels must explicitly specify UIAnchor::TopLeft on all children.
+
+---
 
 ## One-Frame Position Lag in Sprite Rendering
 

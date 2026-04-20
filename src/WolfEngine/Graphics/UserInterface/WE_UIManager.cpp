@@ -10,7 +10,7 @@ void UIManager::setElements(BaseUIElement** elements) {
         if (m_elements[i]) {
             m_elements[i]->m_manager  = this;
             m_elements[i]->m_drawOrder = i;
-            m_elements[i]->m_layer    = m_elements[i]->m_transform->layer;
+            m_elements[i]->m_layer    = m_elements[i]->layer;
         }
     }
     if (m_framebuffer) m_dirty = true;
@@ -25,7 +25,6 @@ void UIManager::initialize(uint16_t* framebuffer) {
 
 void UIManager::render() {
     if (!m_elements || !m_framebuffer) return;
-    for (uint8_t i = 0; i < m_count; i++) { if (m_elements[i]) m_elements[i]->draw(*this); }
+    for (uint8_t i = 0; i < m_count; i++) { if (m_elements[i]) m_elements[i]->draw(*this, 0, 0); }
     m_dirty = false;
 }
-

@@ -2,85 +2,75 @@
 #include "WolfEngine/Graphics/UserInterface/WE_UIManager.hpp"
 #include "WolfEngine/WolfEngine.hpp"
 
-UIShape::UIShape(const UITransform* transform, UIShapeState* state)
-    : BaseUIElement(transform)
-    , m_state(state) {}
-
-void UIShape::setSize(int16_t width, int16_t height) {
-    m_state->width = width;
-    m_state->height = height;
-    markDirty();
+UIShape::UIShape(int16_t x, int16_t y, int16_t w, int16_t h,
+                 UIShapeType shape,
+                 bool filled,
+                 uint8_t colorIndex,
+                 const uint16_t* palette,
+                 uint8_t layer,
+                 UIAnchor anchor)
+{
+    this->x          = x;
+    this->y          = y;
+    this->w          = w;
+    this->h          = h;
+    this->layer      = layer;
+    this->anchor     = anchor;
+    this->shape      = shape;
+    this->filled     = filled;
+    this->colorIndex = colorIndex;
+    this->palette    = palette;
 }
 
-void UIShape::setColorIndex(uint8_t index) {
-    m_state->colorIndex = index;
-    markDirty();
-}
-
-void UIShape::setShape(UIShapeType shape) {
-    m_state->shape = shape;
-    markDirty();
-}
-
-void UIShape::setFilled(bool filled) {
-    m_state->filled = filled;
-    markDirty();
-}
-
-void UIShape::setPalette(const uint16_t* palette) {
-    m_state->palette = palette;
-    markDirty();
-}
+void UIShape::setSize(int16_t width, int16_t height) { w = width; h = height; markDirty(); }
+void UIShape::setColorIndex(uint8_t index)           { colorIndex = index; markDirty(); }
+void UIShape::setShape(UIShapeType s)                { shape = s; markDirty(); }
+void UIShape::setFilled(bool f)                      { filled = f; markDirty(); }
+void UIShape::setPalette(const uint16_t* p)          { palette = p; markDirty(); }
 
 void UIShape::setLength(int16_t length) {
-    switch (m_state->shape) {
-    case UIShapeType::HLine:
-        m_state->width = length;
-        break;
-    case UIShapeType::VLine:
-        m_state->height = length;
-        break;
-    default:
-        // Rectangle: sets both dimensions to the same value
-        m_state->width  = length;
-        m_state->height = length;
-        break;
+    switch (shape) {
+    case UIShapeType::HLine: w = length; break;
+    case UIShapeType::VLine: h = length; break;
+    default: w = length; h = length; break;
     }
     markDirty();
 }
 
-int16_t     UIShape::getWidth()      const { return m_state->width; }
-int16_t     UIShape::getHeight()     const { return m_state->height; }
-uint8_t     UIShape::getColorIndex() const { return m_state->colorIndex; }
-bool        UIShape::isFilled()      const { return m_state->filled; }
-UIShapeType UIShape::getShape()      const { return m_state->shape; }
+int16_t     UIShape::getWidth()      const { return w; }
+int16_t     UIShape::getHeight()     const { return h; }
+uint8_t     UIShape::getColorIndex() const { return colorIndex; }
+bool        UIShape::isFilled()      const { return filled; }
+UIShapeType UIShape::getShape()      const { return shape; }
 
-void UIShape::draw(UIManager& mgr) {
+void UIShape::draw(UIManager& mgr, int16_t offX, int16_t offY) {
     if (!m_visible) return;
 
-    UIRect rect = resolveLayout(*m_transform);
-    const int16_t  width  = m_state->width;
-    const int16_t  height = m_state->height;
-    const uint16_t color  = m_state->palette[m_state->colorIndex];
+    UIRect rect = resolveRect();
+    rect.x += offX;
+    rect.y += offY;
+    const int16_t  shapeW = w;
+    const int16_t  shapeH = h;
+    const uint16_t color  = palette[colorIndex];
 
     // Shape-aware early-out: HLine only needs a valid width,
     // VLine only needs a valid height.
-    switch (m_state->shape) {
-    case UIShapeType::HLine:  if (width  <= 0) return; break;
-    case UIShapeType::VLine:  if (height <= 0) return; break;
-    default:                  if (width  <= 0 || height <= 0) return; break;
+    switch (shape) {
+    case UIShapeType::HLine:  if (shapeW <= 0) return; break;
+    case UIShapeType::VLine:  if (shapeH <= 0) return; break;
+    default:                  if (shapeW <= 0 || shapeH <= 0) return; break;
     }
 
     DrawCommand cmd;
 
-    switch (m_state->shape) {
+    switch (shape) {
     case UIShapeType::HLine:
         cmd.type       = DrawCommandType::Line;
         cmd.flags      = 0;
         cmd.x          = rect.x;
         cmd.y          = rect.y;
         cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
-        cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
+        cmd.line.x2    = static_cast<int16_t>(rect.x + shapeW - 1);
         cmd.line.y2    = rect.y;
         cmd.line.color = color;
         RenderSys().submitDrawCommand(cmd);
@@ -93,21 +83,21 @@ void UIShape::draw(UIManager& mgr) {
         cmd.y          = rect.y;
         cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
         cmd.line.x2    = rect.x;
-        cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+        cmd.line.y2    = static_cast<int16_t>(rect.y + shapeH - 1);
         cmd.line.color = color;
         RenderSys().submitDrawCommand(cmd);
         break;
 
     case UIShapeType::Rectangle:
     default:
-        if (m_state->filled) {
+        if (filled) {
             cmd.type           = DrawCommandType::FillRect;
             cmd.flags          = 0;
             cmd.x              = rect.x;
             cmd.y              = rect.y;
             cmd.sortKey        = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
-            cmd.fillRect.w     = static_cast<uint8_t>(width);
-            cmd.fillRect.h     = static_cast<uint8_t>(height);
+            cmd.fillRect.w     = static_cast<uint8_t>(shapeW);
+            cmd.fillRect.h     = static_cast<uint8_t>(shapeH);
             cmd.fillRect.color = color;
             RenderSys().submitDrawCommand(cmd);
         } else {
@@ -117,7 +107,7 @@ void UIShape::draw(UIManager& mgr) {
             cmd.x          = rect.x;
             cmd.y          = rect.y;
             cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
-            cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
+            cmd.line.x2    = static_cast<int16_t>(rect.x + shapeW - 1);
             cmd.line.y2    = rect.y;
             cmd.line.color = color;
             RenderSys().submitDrawCommand(cmd);
@@ -125,10 +115,10 @@ void UIShape::draw(UIManager& mgr) {
             cmd.type       = DrawCommandType::Line;
             cmd.flags      = 0;
             cmd.x          = rect.x;
-            cmd.y          = static_cast<int16_t>(rect.y + height - 1);
+            cmd.y          = static_cast<int16_t>(rect.y + shapeH - 1);
             cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
-            cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
-            cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+            cmd.line.x2    = static_cast<int16_t>(rect.x + shapeW - 1);
+            cmd.line.y2    = static_cast<int16_t>(rect.y + shapeH - 1);
             cmd.line.color = color;
             RenderSys().submitDrawCommand(cmd);
             // Left edge
@@ -138,17 +128,17 @@ void UIShape::draw(UIManager& mgr) {
             cmd.y          = rect.y;
             cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
             cmd.line.x2    = rect.x;
-            cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+            cmd.line.y2    = static_cast<int16_t>(rect.y + shapeH - 1);
             cmd.line.color = color;
             RenderSys().submitDrawCommand(cmd);
             // Right edge
             cmd.type       = DrawCommandType::Line;
             cmd.flags      = 0;
-            cmd.x          = static_cast<int16_t>(rect.x + width - 1);
+            cmd.x          = static_cast<int16_t>(rect.x + shapeW - 1);
             cmd.y          = rect.y;
             cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
-            cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
-            cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+            cmd.line.x2    = static_cast<int16_t>(rect.x + shapeW - 1);
+            cmd.line.y2    = static_cast<int16_t>(rect.y + shapeH - 1);
             cmd.line.color = color;
             RenderSys().submitDrawCommand(cmd);
         }

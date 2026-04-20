@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <utility>
+#include <assert.h>
 #include "WolfEngine/Graphics/RenderSystem/WE_RenderCore.hpp"
 #include "WE_UITransformHelpers.hpp"
 
@@ -72,7 +73,7 @@ struct UITransform {
     int8_t   marginTop;
     int8_t   marginBottom;
 
-    constexpr UITransform(
+    UITransform(
         int16_t x_ = 0, int16_t y_ = 0,
         int16_t w_ = 0, int16_t h_ = 0,
         uint8_t layer_ = 0,
@@ -82,11 +83,8 @@ struct UITransform {
         : x(x_), y(y_), width(w_), height(h_),
           layer(layer_), anchor(a),
           marginLeft(ml), marginRight(mr),
-          marginTop(mt), marginBottom(mb) 
-        {
-        static_assert(w_ > 0, "UITransform width must be greater than 0");
-        static_assert(h_ > 0, "UITransform height must be greater than 0");
-        }
+          marginTop(mt), marginBottom(mb)
+        {}
 
 };
 
@@ -159,8 +157,11 @@ UIRect resolveAnchor(UIAnchor anchor, int16_t elemW, int16_t elemH) noexcept
 //  where they should be drawn on screen.
 // =============================================================
 [[nodiscard]] constexpr
-UIRect resolveLayout(const UITransform& tf) noexcept
+UIRect resolveLayout(const UITransform& tf)
 {
+    assert(tf.width  > 0 && "UITransform width must be > 0");
+    assert(tf.height > 0 && "UITransform height must be > 0");
+
     const uint8_t anchorIndex = sanitizeAnchorIndex(tf.anchor);
     const int16_t anchorCol   = static_cast<int16_t>(anchorIndex % 3); // 0=left, 1=center, 2=right
     const int16_t anchorRow   = static_cast<int16_t>(anchorIndex / 3); // 0=top,  1=middle, 2=bottom

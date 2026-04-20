@@ -9,25 +9,37 @@
 ```cpp
 #include "WolfEngine/Graphics/UserInterface/UIElements/WE_UIElements.hpp"
 
-// Current field order:
-// { x, y, width, height, layer, anchor, marginLeft, marginRight, marginTop, marginBottom }
-static const UITransform scoreTf = { 4, 4, 96, 7, 0, UIAnchor::TopLeft, 0, 0, 0, 0 };
-static UILabelState scoreState = { "Score: 0" };
+// Minimal
+static UILabel scoreLabel(4, 4, 96, 7, "Score: 0");
 
-static UILabel scoreLabel(&scoreTf, &scoreState);
+// Full control
+static UILabel scoreLabelTopLeft(
+    4, 4, 96, 7,
+    "Score: 0",
+    PL_GS_White,
+    PALETTE_GRAYSCALE,
+    0,
+    UIAnchor::TopLeft
+);
 ```
 
 Register with UI manager before `StartGame()`. See [UI Manager](ui-manager.md).
 
 ---
 
-## UITransform
-
-`UILabel` uses the common `UITransform` struct:
+## Constructor
 
 ```cpp
-UITransform(x, y, width, height, layer, anchor, marginLeft, marginRight, marginTop, marginBottom)
+UILabel(int16_t x, int16_t y, int16_t w, int16_t h,
+    const char* text = "",
+    uint8_t colorIndex = PL_GS_White,
+    const uint16_t* palette = PALETTE_GRAYSCALE,
+    uint8_t layer = 0,
+    UIAnchor anchor = UIAnchor::Center);
 ```
+
+`UILabel` layout fields live on `BaseUIElement` (`x`, `y`, `w`, `h`, `layer`, `anchor`).
+The engine resolves anchored screen coordinates internally at draw time.
 
 Current renderer behavior:
 
@@ -38,27 +50,11 @@ Current renderer behavior:
 
 ---
 
-## UILabelState
+## Notes
 
-```cpp
-struct UILabelState {
-    char            text[32];
-    uint8_t         colorIndex = PL_GS_White;
-    const uint16_t* palette    = PALETTE_GRAYSCALE;
-};
-```
-
-Simple default:
-
-```cpp
-static UILabelState myState = { "Hello" };
-```
-
-Custom color/palette:
-
-```cpp
-static UILabelState myState = { "Score: 0", PL_WM_Amber, PALETTE_WARM };
-```
+- `UILabelState` was removed from the public UI API.
+- Constructor text is copied with clamped `strncpy` and explicit null termination.
+- `UILabel` is not an aggregate type, so initialize it through its constructor.
 
 ---
 

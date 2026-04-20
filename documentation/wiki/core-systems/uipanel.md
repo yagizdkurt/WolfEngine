@@ -9,15 +9,16 @@
 ```cpp
 #include "WolfEngine/Graphics/UserInterface/UIElements/WE_UIElements.hpp"
 
-// Current field order:
-// { x, y, width, height, layer, anchor, marginLeft, marginRight, marginTop, marginBottom }
-static const UITransform panelTf = { 0, -20, 128, 20, 1, UIAnchor::BotLeft, 0, 0, 0, 0 };
-
-static UIPanelState panelState = { 128, 20, true, 0x0000 };
-
 static BaseUIElement* panelChildren[] = { &myLabel, &myShape, nullptr };
 
-static UIPanel panel(&panelTf, &panelState, panelChildren);
+static UIPanel panel(
+    0, -20, 128, 20,
+    panelChildren,
+    0x0000,
+    true,
+    1,
+    UIAnchor::BotLeft
+);
 ```
 
 Register only the panel in the top-level UI list:
@@ -31,24 +32,25 @@ Do not register panel children separately in `uiElements`.
 
 ---
 
-## UIPanelState
+## Constructor
 
 ```cpp
-struct UIPanelState {
-    int16_t  width;
-    int16_t  height;
-    bool     backgroundEnabled;
-    uint16_t backgroundColor;
-};
+UIPanel(int16_t x, int16_t y, int16_t w, int16_t h,
+        BaseUIElement** ch = nullptr,
+        uint16_t background = 0x0000,
+        bool backgroundEnabled = true,
+        uint8_t layer = 0,
+        UIAnchor anchor = UIAnchor::Center);
 ```
 
 ---
 
 ## Child List Rules
 
-1. `m_children` must be null-terminated.
-2. Children are rendered in array order.
-3. Child transforms are interpreted relative to panel position during draw.
+1. Constructor input `ch` is a null-terminated pointer list.
+2. Constructor copies children into fixed storage: `children[WE_UI_MAX_PANEL_CHILDREN]`.
+3. Render order follows `children[]` index order.
+4. Register only the panel in top-level `UI().setElements(...)`; do not also register children.
 
 ---
 
@@ -58,11 +60,7 @@ struct UIPanelState {
 panel.setSize(160, 24);
 panel.setBackgroundEnabled(true);
 panel.setBackgroundColor(0xF800);
-
-BaseUIElement** children = panel.getChildren();
 ```
-
-Current public getter support is `getChildren()`.
 
 ---
 
@@ -70,11 +68,13 @@ Current public getter support is `getChildren()`.
 
 When `UIPanel::draw()` runs:
 
-1. Resolve panel position from its transform.
+1. Resolve panel position from current layout fields.
 2. Submit a `FillRect` command for panel background (if enabled and non-zero size).
-3. Temporarily offset each child transform by panel `(x, y)`.
+3. Iterate `children[]` and skip null entries.
 4. Temporarily patch child layer to `panel_layer + 1` so children sort above panel background.
-5. Call child `draw(...)` so child submits its own commands.
-6. Restore child layer and original child transform pointer.
+5. Call child `draw(...)` with `offX/offY` equal to the panel screen position.
+6. Restore child layer.
 
-This gives panel-local positioning while still using normal element draw logic.
+This gives panel-local positioning without transform-pointer patching.
+
+Note: `UIPanelState` and `getChildren()` are no longer part of the public API.

@@ -24,16 +24,8 @@ Register UI elements after `StartEngine()` and before `StartGame()`.
 #include "WolfEngine/WolfEngine.hpp"
 #include "WolfEngine/Graphics/UserInterface/UIElements/WE_UIElements.hpp"
 
-// Current field order:
-// { x, y, width, height, layer, anchor, marginLeft, marginRight, marginTop, marginBottom }
-static const UITransform scoreTf  = { 4,  4, 96, 7, 0, UIAnchor::TopLeft, 0, 0, 0, 0 };
-static const UITransform healthTf = { 4, 16, 96, 7, 0, UIAnchor::TopLeft, 0, 0, 0, 0 };
-
-static UILabelState scoreState  = { "Score: 0" };
-static UILabelState healthState = { "HP: 100" };
-
-static UILabel scoreLabel(&scoreTf, &scoreState);
-static UILabel healthLabel(&healthTf, &healthState);
+static UILabel scoreLabel(4, 4, 96, 7, "Score: 0", PL_GS_White, PALETTE_GRAYSCALE, 0, UIAnchor::TopLeft);
+static UILabel healthLabel(4, 16, 96, 7, "HP: 100", PL_GS_White, PALETTE_GRAYSCALE, 0, UIAnchor::TopLeft);
 
 static BaseUIElement* uiElements[] = { &scoreLabel, &healthLabel, nullptr };
 
@@ -77,6 +69,9 @@ The dirty flag still exists and is useful for future optimization/caching, but i
 
 ## Layout Notes
 
-UI position is resolved from `UITransform` + `UIAnchor`.
+Game code sets UI layout through constructor arguments (`x`, `y`, `w`, `h`, `layer`, `anchor`).
 
 Use anchors (`TopLeft`, `BotCenter`, `Center`, etc.) to place elements relative to screen edges or center.
+The engine still resolves final screen rectangles with `UITransform` internally in `BaseUIElement::resolveRect()`.
+
+Note: `UILabel`, `UIShape`, and `UIPanel` are not aggregates (virtual base methods), so use constructors for initialization.

@@ -268,7 +268,7 @@ void render();   // called by engine each frame
 **Element hierarchy:**
 
 ```
-BaseUIElement  (show/hide, dirty flag, UITransform, command submit metadata)
+BaseUIElement  (show/hide, dirty flag, layout fields x/y/w/h/layer/anchor, command submit metadata)
 ├─ UILabel     (text string ≤32 chars, 5×7 font, palette color index)
 ├─ UIShape     (Rectangle / HLine / VLine, filled or outline)
 └─ UIPanel     (container with optional background; translates child coords)
@@ -277,8 +277,19 @@ BaseUIElement  (show/hide, dirty flag, UITransform, command submit metadata)
 **Key design choices:**
 - `UITransform` uses a `UIAnchor` enum (9 positions) + pixel offset. `resolveLayout()`
   converts anchor + margin to absolute screen coordinates at render time.
+- `UILabel`, `UIShape`, and `UIPanel` expose explicit constructors for one-line static declarations.
+- `UILabelState`, `UIShapeState`, and `UIPanelState` are removed from the public API.
+- UI element types are not aggregate classes under C++20; use constructors instead.
 - Dirty flag is manager-level for change tracking. Current renderer invokes UI pass every frame, and UIManager draws all registered elements per pass.
 - Font is a static 5×7 bitmap array (`WE_Font.hpp`) covering ASCII 32–126.
+
+**Constructor example:**
+```cpp
+static UILabel title(4, 2, 120, 7, "WOLFENGINE UI TEST", PL_GS_White, PALETTE_GRAYSCALE, 0, UIAnchor::TopLeft);
+static UIShape divider(4, 11, 120, 1, UIShapeType::HLine, true, PL_GS_White, PALETTE_GRAYSCALE, 0, UIAnchor::TopLeft);
+static BaseUIElement* panelChildren[] = { &title, &divider, nullptr };
+static UIPanel panel(0, -24, 128, 24, panelChildren, 0x0000, true, 1, UIAnchor::BotLeft);
+```
 
 
 ---

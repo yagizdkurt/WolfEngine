@@ -94,11 +94,12 @@ constexpr uint16_t    cmdMakeSortKey(RenderLayer layer, uint8_t screenY) {
     return (static_cast<uint16_t>(layer) << 8) | screenY;
 }
 
-#if UINTPTR_MAX == 0xFFFFFFFF
-static_assert(sizeof(DrawCommand) == 20, "DrawCommand must be exactly 20 bytes — check field ordering and padding");
+#if defined(ESP_PLATFORM) // enforce layout assumptions for embedded target — static_asserts are free on desktop
+static_assert(sizeof(DrawCommand) == 20, "DrawCommand layout changed");
+static_assert(alignof(DrawCommand) <= 4, "DrawCommand alignment exceeds embedded target expectation");
 #endif
+// Enforce trivially copyable for safe memcpy in circular buffer — no hidden padding or non-trivial fields.
 static_assert(std::is_trivially_copyable_v<DrawCommand>);
-static_assert(alignof(DrawCommand) <= 4);
 
 struct FrameDiagnostics {
     uint16_t commandsSubmitted;  // per-frame — diff between frames for per-frame count
