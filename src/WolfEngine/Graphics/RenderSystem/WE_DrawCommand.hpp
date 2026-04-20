@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <type_traits>
 #include "WolfEngine/Settings/WE_Layers.hpp"
 #include "WolfEngine/Graphics/SpriteSystem/WE_SpriteRotation.hpp"
 
@@ -72,7 +73,7 @@ struct DrawCommand {
         } circle;               // 12 bytes
 
         struct {
-            const char* text;   // pointer to UILabelState::text — stable for frame lifetime
+            const char* text;   // pointer to UILabel::text — stable for frame lifetime
             uint16_t    color;  // pre-resolved RGB565 at submit time
             uint8_t     maxWidth; // clip width in pixels, 0 = no clip
             uint8_t     _free[5];
