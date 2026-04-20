@@ -44,8 +44,8 @@ struct UIRect {
     int16_t width;
     int16_t height;
 
-    constexpr int16_t x2()      const { return static_cast<int16_t>(x + width);            }
-    constexpr int16_t y2()      const { return static_cast<int16_t>(y + height);           }
+    constexpr int16_t x2()      const { return static_cast<int16_t>(x + width);             }
+    constexpr int16_t y2()      const { return static_cast<int16_t>(y + height);            }
     constexpr int16_t centerX() const { return static_cast<int16_t>(x + floorDiv2(width));  }
     constexpr int16_t centerY() const { return static_cast<int16_t>(y + floorDiv2(height)); }
     constexpr bool    isEmpty() const { return width <= 0 || height <= 0; }
@@ -87,6 +87,7 @@ struct UITransform {
         static_assert(w_ > 0, "UITransform width must be greater than 0");
         static_assert(h_ > 0, "UITransform height must be greater than 0");
         }
+
 };
 
 // =============================================================

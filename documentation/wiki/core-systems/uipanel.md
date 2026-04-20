@@ -9,7 +9,9 @@
 ```cpp
 #include "WolfEngine/Graphics/UserInterface/UIElements/WE_UIElements.hpp"
 
-static const UITransform panelTf = { 0, -20, 0, 0, 0, 0, 0, 0, UIAnchor::BotLeft };
+// Current field order:
+// { x, y, width, height, layer, anchor, marginLeft, marginRight, marginTop, marginBottom }
+static const UITransform panelTf = { 0, -20, 128, 20, 1, UIAnchor::BotLeft, 0, 0, 0, 0 };
 
 static UIPanelState panelState = { 128, 20, true, 0x0000 };
 
@@ -69,9 +71,10 @@ Current public getter support is `getChildren()`.
 When `UIPanel::draw()` runs:
 
 1. Resolve panel position from its transform.
-2. Draw panel background if enabled.
+2. Submit a `FillRect` command for panel background (if enabled and non-zero size).
 3. Temporarily offset each child transform by panel `(x, y)`.
-4. Draw child.
-5. Restore the original child transform pointer.
+4. Temporarily patch child layer to `panel_layer + 1` so children sort above panel background.
+5. Call child `draw(...)` so child submits its own commands.
+6. Restore child layer and original child transform pointer.
 
 This gives panel-local positioning while still using normal element draw logic.

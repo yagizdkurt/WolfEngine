@@ -35,4 +35,4 @@ spriteSystemEnabled = true,
 cleanFramebufferEachFrame = true,
 ```
 
-Disabling `spriteSystemEnabled` stops `SpriteRenderer` from submitting sprite commands. The renderer still runs its command execution, UI render, and display flush path each frame. Disabling `cleanFramebufferEachFrame` means pixels you wrote last frame will persist unless you overwrite them yourself.
+Disabling `spriteSystemEnabled` stops `SpriteRenderer` from submitting sprite commands. The renderer still runs world/UI command execution and display flush each frame. Disabling `cleanFramebufferEachFrame` means pixels you wrote last frame will persist unless overwritten by later command execution or your own writes.

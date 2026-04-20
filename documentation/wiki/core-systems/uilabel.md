@@ -9,7 +9,9 @@
 ```cpp
 #include "WolfEngine/Graphics/UserInterface/UIElements/WE_UIElements.hpp"
 
-static const UITransform scoreTf = { 4, 4, 0, 0, 0, 0, 0, 0, UIAnchor::TopLeft };
+// Current field order:
+// { x, y, width, height, layer, anchor, marginLeft, marginRight, marginTop, marginBottom }
+static const UITransform scoreTf = { 4, 4, 96, 7, 0, UIAnchor::TopLeft, 0, 0, 0, 0 };
 static UILabelState scoreState = { "Score: 0" };
 
 static UILabel scoreLabel(&scoreTf, &scoreState);
@@ -24,10 +26,15 @@ Register with UI manager before `StartGame()`. See [UI Manager](ui-manager.md).
 `UILabel` uses the common `UITransform` struct:
 
 ```cpp
-UITransform(x, y, width, height, marginLeft, marginRight, marginTop, marginBottom, anchor)
+UITransform(x, y, width, height, layer, anchor, marginLeft, marginRight, marginTop, marginBottom)
 ```
 
-For labels, width/height are not required by the text renderer, but anchor and offsets still control placement.
+Current renderer behavior:
+
+- `UILabel::draw()` submits one `DrawCommandType::TextRun` command.
+- `rect.width` from `resolveLayout()` is passed as `maxWidth`.
+- `maxWidth = 0` means no clipping.
+- `maxWidth > 0` clips at command execution time.
 
 ---
 
@@ -75,5 +82,5 @@ bool visible = scoreLabel.isVisible();
 
 - Max length is 32 bytes including null terminator
 - Printable ASCII (32-126) is supported
-- Out-of-range characters are rendered as `?`
+- Out-of-range characters are skipped
 - Font is fixed-size 5x7 with spacing

@@ -50,8 +50,13 @@ Inside the running loop, sound is updated continuously. A full game tick is exec
 4. `Update()` for active objects
 5. Collider manager tick
 6. Camera follow tick
-7. Renderer render/flush (clear -> sort/execute command buffer -> UI (if dirty) -> flush)
+7. Renderer render/flush (clear -> world pass -> UI pass -> full-screen flush)
 8. `WETime::incrementFrameCount()`
+
+Renderer step detail (current):
+- World pass: sort + execute currently buffered world commands
+- UI pass: `UI().render()` submits UI commands, then sort + execute
+- Flush: full-screen flush each frame
 
 Frame pacing is currently done by elapsed-time gating, not by explicit sleep.
 

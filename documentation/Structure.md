@@ -45,12 +45,12 @@ WolfEngine/
 │   │   ├── WE_Palette_Gameboy.hpp
 │   │   └── WE_Palette_Sunset.hpp
 │   └── UserInterface/
-│       ├── WE_UIManager.hpp / .cpp   # UI root: owns element array, dirty tracking, render dispatch
+│       ├── WE_UIManager.hpp / .cpp   # UI root: owns element array, dirty tracking, draw-order/layer assignment, render dispatch
 │       ├── Fonts/
 │       │   └── WE_Font.hpp           # 5×7 bitmap font for ASCII 32–126
 │       └── UIElements/
 │           ├── Base/
-│           │   ├── WE_BaseUIElement.hpp / .cpp  # Abstract element: show/hide, dirty flag, drawPixelRaw()
+│           │   ├── WE_BaseUIElement.hpp / .cpp  # Abstract element: show/hide, dirty flag, UITransform helpers, command-sort metadata
 │           │   ├── WE_UITransform.hpp            # Position, size, margins, UIAnchor enum (9 positions)
 │           │   └── WE_UITransformHelpers.hpp     # Anchor resolution math (resolveAnchor, resolveLayout)
 │           ├── WE_UILabel.hpp / .cpp   # Text label (32-char max, 5×7 font)

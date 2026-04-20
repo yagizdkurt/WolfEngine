@@ -32,9 +32,9 @@ Target frame time in microseconds. The engine tries to maintain this frame durat
 | 30  | 33333   |
 | 20  | 50000   |
 
-The real bottleneck is SPI, not the CPU. The ESP32 runs at 240 MHz and can execute game logic, physics, and rendering calculations in a fraction of a millisecond. However, flushing the framebuffer to the ST7735 over SPI at 10 MHz takes roughly 33 ms for a full 128x160 screen — which is almost exactly one frame at 30 FPS. This means pushing beyond 30 FPS on a full-screen flush is physically limited by the SPI bus, not the processor.
+The real bottleneck is SPI, not the CPU. The ESP32 can run gameplay logic quickly, but display transfer still dominates frame time for full-screen RGB565 updates.
 
-WolfEngine's partial flush optimization helps — when no UI has changed, only the game region (128x128) is sent, which takes around 26 ms and leaves more headroom. If you need higher frame rates, reducing `RENDER_UI_START_ROW` to shrink the game region or increasing `ST7735_SPI_CLOCK_HZ` in the display driver are the most effective levers.
+Current renderer behavior is a two-pass world+UI command execution followed by a full-screen flush every frame. If you need higher frame rates, the most effective lever is increasing display bus throughput (for example SPI clock and driver efficiency).
 
 ---
 
@@ -101,8 +101,9 @@ Common values:
 
 ### gameRegion
 
-Rectangular area of the screen used for game rendering. `{ x1, y1, x2, y2 }` (`x2` and `y2` are exclusive)
-Outside this region will not be rendered per frame but will be rendered when UI gets dirty.
+Rectangular area used by world sprite clipping/culling. `{ x1, y1, x2, y2 }` (`x2` and `y2` are exclusive).
+
+`gameRegion` affects sprite drawing bounds. UI primitive commands are clipped to screen bounds, not `gameRegion`.
 
 ### spriteSystemEnabled
 

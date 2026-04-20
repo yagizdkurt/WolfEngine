@@ -6,7 +6,12 @@ Layers are settings that users can change according to their game.
 
 ## RenderLayer
 
-Render layers control the primary draw order of commands. Layers are drawn in ascending order - layer 0 is drawn first (bottom), the highest layer is drawn last (top). In the renderer this is encoded into the high byte of `DrawCommand.sortKey`. See [Renderer](../core-systems/renderer.md) for how layers fit into the rendering pipeline.
+Render layers control draw order within a render pass. Layers are drawn in ascending order - layer 0 is drawn first (bottom), the highest layer is drawn last (top). In the renderer this is encoded into the high byte of `DrawCommand.sortKey`. See [Renderer](../core-systems/renderer.md) for pipeline details.
+
+Important:
+- World and UI are executed in separate passes.
+- Layer values do not interleave world and UI across pass boundaries.
+- UI pass runs after world pass.
 
 ---
 
