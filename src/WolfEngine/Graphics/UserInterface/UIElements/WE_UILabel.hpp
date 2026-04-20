@@ -54,5 +54,4 @@ public:
 private:
     UILabelState* m_state;
 
-    void drawChar(int16_t x, int16_t y, char c, uint16_t color);
 };

@@ -60,7 +60,6 @@ private:
     UIPanelState*   m_state;
     BaseUIElement** m_children;
 
-    void drawBackground(UIManager& mgr, int16_t panelX, int16_t panelY);
     void syncChildManagers();
     void propagateDirtyToChildren();
 };

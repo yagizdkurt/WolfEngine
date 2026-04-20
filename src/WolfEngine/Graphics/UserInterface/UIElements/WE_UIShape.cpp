@@ -1,5 +1,6 @@
 #include "WE_UIShape.hpp"
 #include "WolfEngine/Graphics/UserInterface/WE_UIManager.hpp"
+#include "WolfEngine/WolfEngine.hpp"
 
 UIShape::UIShape(const UITransform* transform, UIShapeState* state)
     : BaseUIElement(transform)
@@ -57,8 +58,7 @@ UIShapeType UIShape::getShape()      const { return m_state->shape; }
 void UIShape::draw(UIManager& mgr) {
     if (!m_visible) return;
 
-    const int16_t  x      = getX();
-    const int16_t  y      = getY();
+    UIRect rect = resolveLayout(*m_transform);
     const int16_t  width  = m_state->width;
     const int16_t  height = m_state->height;
     const uint16_t color  = m_state->palette[m_state->colorIndex];
@@ -71,36 +71,86 @@ void UIShape::draw(UIManager& mgr) {
     default:                  if (width  <= 0 || height <= 0) return; break;
     }
 
+    DrawCommand cmd;
+
     switch (m_state->shape) {
     case UIShapeType::HLine:
-        for (int16_t dx = 0; dx < width; ++dx) {
-            drawPixelRaw(x + dx, y, color);
-        }
+        cmd.type       = DrawCommandType::Line;
+        cmd.flags      = 0;
+        cmd.x          = rect.x;
+        cmd.y          = rect.y;
+        cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
+        cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
+        cmd.line.y2    = rect.y;
+        cmd.line.color = color;
+        RenderSys().submitDrawCommand(cmd);
         break;
 
     case UIShapeType::VLine:
-        for (int16_t dy = 0; dy < height; ++dy) {
-            drawPixelRaw(x, y + dy, color);
-        }
+        cmd.type       = DrawCommandType::Line;
+        cmd.flags      = 0;
+        cmd.x          = rect.x;
+        cmd.y          = rect.y;
+        cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
+        cmd.line.x2    = rect.x;
+        cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+        cmd.line.color = color;
+        RenderSys().submitDrawCommand(cmd);
         break;
 
     case UIShapeType::Rectangle:
     default:
         if (m_state->filled) {
-            for (int16_t dy = 0; dy < height; ++dy) {
-                for (int16_t dx = 0; dx < width; ++dx) {
-                    drawPixelRaw(x + dx, y + dy, color);
-                }
-            }
+            cmd.type           = DrawCommandType::FillRect;
+            cmd.flags          = 0;
+            cmd.x              = rect.x;
+            cmd.y              = rect.y;
+            cmd.sortKey        = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
+            cmd.fillRect.w     = static_cast<uint8_t>(width);
+            cmd.fillRect.h     = static_cast<uint8_t>(height);
+            cmd.fillRect.color = color;
+            RenderSys().submitDrawCommand(cmd);
         } else {
-            for (int16_t dx = 0; dx < width; ++dx) {
-                drawPixelRaw(x + dx, y, color);
-                drawPixelRaw(x + dx, y + height - 1, color);
-            }
-            for (int16_t dy = 0; dy < height; ++dy) {
-                drawPixelRaw(x, y + dy, color);
-                drawPixelRaw(x + width - 1, y + dy, color);
-            }
+            // Top edge
+            cmd.type       = DrawCommandType::Line;
+            cmd.flags      = 0;
+            cmd.x          = rect.x;
+            cmd.y          = rect.y;
+            cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
+            cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
+            cmd.line.y2    = rect.y;
+            cmd.line.color = color;
+            RenderSys().submitDrawCommand(cmd);
+            // Bottom edge
+            cmd.type       = DrawCommandType::Line;
+            cmd.flags      = 0;
+            cmd.x          = rect.x;
+            cmd.y          = static_cast<int16_t>(rect.y + height - 1);
+            cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
+            cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
+            cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+            cmd.line.color = color;
+            RenderSys().submitDrawCommand(cmd);
+            // Left edge
+            cmd.type       = DrawCommandType::Line;
+            cmd.flags      = 0;
+            cmd.x          = rect.x;
+            cmd.y          = rect.y;
+            cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
+            cmd.line.x2    = rect.x;
+            cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+            cmd.line.color = color;
+            RenderSys().submitDrawCommand(cmd);
+            // Right edge
+            cmd.type       = DrawCommandType::Line;
+            cmd.flags      = 0;
+            cmd.x          = static_cast<int16_t>(rect.x + width - 1);
+            cmd.y          = rect.y;
+            cmd.sortKey    = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), m_drawOrder);
+            cmd.line.x2    = static_cast<int16_t>(rect.x + width - 1);
+            cmd.line.y2    = static_cast<int16_t>(rect.y + height - 1);
+            cmd.line.color = color;
+            RenderSys().submitDrawCommand(cmd);
         }
         break;
     }

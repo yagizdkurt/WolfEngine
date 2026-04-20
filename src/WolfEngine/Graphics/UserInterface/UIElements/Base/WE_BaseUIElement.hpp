@@ -43,18 +43,14 @@ protected:
     friend class UIManager;
     friend class UIPanel;
 
-    uint16_t* fb = nullptr;
     const UITransform* m_transform;
     UIManager*         m_manager;
     bool               m_visible;
-    
+    uint8_t            m_drawOrder = 0;
+    uint8_t            m_layer     = 0;
+
     static constexpr int SCREEN_WIDTH = Renderer::SCREEN_WIDTH;
     static constexpr int SCREEN_HEIGHT = Renderer::SCREEN_HEIGHT;
-
-    inline void drawPixelRaw(int16_t x, int16_t y, uint16_t color) const {
-        if (!fb || x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT) return;
-        fb[y * SCREEN_WIDTH + x] = color;
-    }
 
     void markDirty();
 };

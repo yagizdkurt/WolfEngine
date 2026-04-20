@@ -82,7 +82,11 @@ struct UITransform {
         : x(x_), y(y_), width(w_), height(h_),
           layer(layer_), anchor(a),
           marginLeft(ml), marginRight(mr),
-          marginTop(mt), marginBottom(mb) {}
+          marginTop(mt), marginBottom(mb) 
+        {
+        static_assert(w_ > 0, "UITransform width must be greater than 0");
+        static_assert(h_ > 0, "UITransform height must be greater than 0");
+        }
 };
 
 // =============================================================
