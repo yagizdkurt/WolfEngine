@@ -60,7 +60,7 @@ timer.isActive();   // whether timer is active
 float dt = WETime::DELTA_TIME;
 ```
 
-`DELTA_TIME` is a compile-time value derived from `TARGET_FRAME_TIME_US`.
+`DELTA_TIME` is a compile-time value derived from `Settings.render.targetFrameTimeUs`.
 
 ### Time Accessors
 

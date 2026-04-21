@@ -62,11 +62,11 @@ Player* player = new Player();
 
 ## GameObject Registry
 
-WolfEngine keeps a fixed-size registry (`MAX_GAME_OBJECTS` in `WE_Settings.hpp`) and tracks active object pointers there.
+WolfEngine keeps a fixed-size registry (`Settings.limits.maxGameObjects` in `WE_Settings.hpp`) and tracks active object pointers there.
 
 The registry is finite. If your game creates many temporary objects, design with this cap in mind.
 
-If your code spawns many objects (projectiles, particles, enemies), monitor usage against `MAX_GAME_OBJECTS`.
+If your code spawns many objects (projectiles, particles, enemies), monitor usage against `Settings.limits.maxGameObjects`.
 
 ---
 

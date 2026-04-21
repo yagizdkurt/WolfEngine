@@ -13,7 +13,7 @@ SpriteRenderer::SpriteRenderer(GameObject* owner, const Sprite* sprite, const ui
     tickEnabled = true;  // base class defaults to false — must be set explicitly
 }
 
-void SpriteRenderer::tick() { if constexpr (RENDER_SETTINGS.spriteSystemEnabled) onDraw(); }
+void SpriteRenderer::tick() { if constexpr (Settings.render.spriteSystemEnabled) onDraw(); }
 
 void SpriteRenderer::onDraw() {
     if (!m_visible || !m_sprite) return;
@@ -25,10 +25,10 @@ void SpriteRenderer::onDraw() {
 
     // Coarse cull — skip if entirely outside the game region
     const int sz = m_sprite->size;
-    if (drawX + sz <= RENDER_SETTINGS.gameRegion.x1 ||
-        drawX       >= RENDER_SETTINGS.gameRegion.x2 ||
-        drawY + sz <= RENDER_SETTINGS.gameRegion.y1 ||
-        drawY       >= RENDER_SETTINGS.gameRegion.y2)
+    if (drawX + sz <= Settings.render.gameRegion.x1 ||
+        drawX       >= Settings.render.gameRegion.x2 ||
+        drawY + sz <= Settings.render.gameRegion.y1 ||
+        drawY       >= Settings.render.gameRegion.y2)
         return;
 
     DrawCommand cmd;

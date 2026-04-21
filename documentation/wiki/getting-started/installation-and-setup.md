@@ -47,7 +47,7 @@ The engine handles the game loop, rendering, input polling, and display flushing
 |---|---|
 | ⚙️ **[Fast Tutorial](first-gameobject.md)** | For people who just want to rush B |
 | ⏩ **[Engine Settings](../core-systems/engine.md)** | Configure frame rate, background color, and UI region |
-| 📌 **[Pin Setup](../pin-definitions.md)** | Set up your GPIO and SPI wiring |
+| 📌 **[Pin Setup](../engine-settings/pin-definitions.md)** | Set up your GPIO and SPI wiring |
 | 🛰️ **[About GameObjects](../gameobjects-and-components/gameobject.md)** | Learn everything about GameObjects |
 | 🎮 **[Inputs!](../core-systems/input.md)** | How to get inputs from the controllers? |
 | 🚗 **[Your First Game Object!](first-gameobject.md)** | Learn how to create and move objects |

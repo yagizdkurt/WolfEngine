@@ -63,11 +63,11 @@ public:
 2. Culls sprites fully outside the game region
 3. Submits a sprite `DrawCommand` to the renderer
 
-This happens only when `RENDER_SETTINGS.spriteSystemEnabled` is `true`.
+This happens only when `Settings.render.spriteSystemEnabled` is `true`.
 
 Because command submission happens in component tick (before `Update()` and camera follow), sprites render using previous-frame transform/camera state.
 
-> **Note:** You can use your defined render layers with the RenderLayer enum. Check [Layers](../settings.md) for more information.
+> **Note:** You can use your defined render layers with the RenderLayer enum. Check [Layers](../engine-settings/render-layers.md) for more information.
 
 ---
 
@@ -111,7 +111,7 @@ spriteRenderer.setPalette(PALETTE_WARM);    // normal state
 spriteRenderer.setPalette(PALETTE_SUNSET);  // hit flash
 ```
 
-See [Palette](../settings.md) for common palette swap patterns like damage flash, color variants, and day/night cycles.
+See [Settings](../engine-settings/settings.md) for related render settings and configuration context.
 
 ---
 

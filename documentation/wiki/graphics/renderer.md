@@ -11,7 +11,7 @@ If you are looking for gameplay usage, see [How To Setup Graphics](../graphics/h
 Current frame pipeline is two-pass:
 
 **1. Clear**
-If `cleanFramebufferEachFrame` is enabled in [Settings](../settings.md), framebuffer is filled with `defaultBackgroundPixel`.
+If `cleanFramebufferEachFrame` is enabled in [Settings](../engine-settings/settings.md), framebuffer is filled with `defaultBackgroundPixel`.
 
 **2. World Pass (sort + execute)**
 Commands buffered during component tick (mostly sprite commands) are sorted by `sortKey` and executed.
@@ -33,7 +33,7 @@ Framebuffer is flushed once per frame as full-screen.
 - `Circle`
 - `TextRun`
 
-Sprites still clip to `RENDER_SETTINGS.gameRegion`. UI primitives clip to screen bounds.
+Sprites still clip to `Settings.render.gameRegion`. UI primitives clip to screen bounds.
 
 ---
 
@@ -48,13 +48,13 @@ Important:
 - `RenderLayer` does not interleave world and UI across passes.
 - UI pass always runs after world pass.
 
-See [Render Layers](../render-layers.md) for layer definitions.
+See [Render Layers](../engine-settings/render-layers.md) for layer definitions.
 
 ---
 
 ## Command Buffer Capacity
 
-Capacity is `MAX_DRAW_COMMANDS` from render settings.
+Capacity is `Settings.render.maxDrawCommands`.
 
 - If the buffer fills, new commands are dropped.
 - Drops are counted in `commandsDropped`.
@@ -74,7 +74,7 @@ Sprite rotation uses `DrawCommand.flags` bits 7-6 (`R0`, `R90`, `R180`, `R270`).
 
 ## Render Settings
 
-Renderer behavior is configured in `WE_RenderSettings.hpp` (included by `WE_Settings.hpp`). See [Settings](../settings.md).
+Renderer behavior is configured in `WE_Settings.hpp` via `Settings.render`. See [Settings](../engine-settings/settings.md).
 
 ---
 

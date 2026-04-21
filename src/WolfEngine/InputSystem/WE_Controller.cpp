@@ -14,7 +14,7 @@ void Controller::init(const ControllerSettings& settings, adc_oneshot_unit_handl
 
     // ── GPIO setup ────────────────────────────────────────────
     uint64_t pinMask = 0;
-    for (int i = 0; i < BUTTON_COUNT; i++) {
+    for (int i = 0; i < Settings.input.buttonCount; i++) {
         if (m_settings->gpioPins[i] != -1)
             pinMask |= (1ULL << m_settings->gpioPins[i]);
     }
@@ -54,7 +54,7 @@ void Controller::init(const ControllerSettings& settings, adc_oneshot_unit_handl
     }
 
     // ── Debounce timestamps ───────────────────────────────────
-    for (int i = 0; i < BUTTON_COUNT; i++)
+    for (int i = 0; i < Settings.input.buttonCount; i++)
         m_debounceTimestamp[i] = now;
 }
 
@@ -65,7 +65,7 @@ void Controller::init(const ControllerSettings& settings, adc_oneshot_unit_handl
 void Controller::tick(int64_t now, int64_t debounceUs) {
 
     // ── Button debounce ───────────────────────────────────────
-    for (int i = 0; i < BUTTON_COUNT; i++) {
+    for (int i = 0; i < Settings.input.buttonCount; i++) {
         bool raw = readRaw(static_cast<Button>(i));
 
         if (raw != m_rawState[i]) {

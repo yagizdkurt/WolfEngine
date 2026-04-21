@@ -7,6 +7,6 @@
 // =============================================================================
 
 typedef struct {
-    GameObject* gameObjects[MAX_GAME_OBJECTS];
+    GameObject* gameObjects[Settings.limits.maxGameObjects];
     uint8_t count;
 } GameObjectRegistry;

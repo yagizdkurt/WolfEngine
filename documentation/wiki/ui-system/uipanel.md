@@ -48,7 +48,7 @@ UIPanel(int16_t x, int16_t y, int16_t w, int16_t h,
 ## Child List Rules
 
 1. Constructor input `ch` is a null-terminated pointer list.
-2. Constructor copies children into fixed storage: `children[WE_UI_MAX_PANEL_CHILDREN]`.
+2. Constructor copies children into fixed storage: `children[Settings.limits.maxPanelChildren]`.
 3. Render order follows `children[]` index order.
 4. Register only the panel in top-level `UI().setElements(...)`; do not also register children.
 

@@ -1,5 +1,5 @@
 #include "WE_Display_ST7735.hpp"
-#include "WolfEngine/Settings/WE_PINDEFS.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 #include "esp_lcd_st7735.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
@@ -54,7 +54,7 @@ public:
         xSemaphoreGive(s_flushSem); // start as available
 
         // --- GPIO ---
-        io_conf.pin_bit_mask = (1ULL << RENDER_PIN_DATACOMMAND) | (1ULL << RENDER_PIN_RESET);
+        io_conf.pin_bit_mask = (1ULL << Settings.hardware.display.dc) | (1ULL << Settings.hardware.display.rst);
         io_conf.mode         = GPIO_MODE_OUTPUT;
         io_conf.pull_up_en   = GPIO_PULLUP_DISABLE;
         io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
@@ -63,9 +63,9 @@ public:
         if (ret != ESP_OK) { DebugErr(TAG, "GPIO config failed: %s", esp_err_to_name(ret)); goto err_gpio; }
 
         // --- SPI bus ---
-        bus_cfg.mosi_io_num     = SPI_PIN_MOSI;
-        bus_cfg.miso_io_num     = SPI_PIN_MISO;
-        bus_cfg.sclk_io_num     = SPI_PIN_SCLK;
+        bus_cfg.mosi_io_num     = Settings.hardware.spi.mosi;
+        bus_cfg.miso_io_num     = Settings.hardware.spi.miso;
+        bus_cfg.sclk_io_num     = Settings.hardware.spi.sclk;
         bus_cfg.quadwp_io_num   = -1;
         bus_cfg.quadhd_io_num   = -1;
         bus_cfg.max_transfer_sz = screenWidth * screenHeight * (ST7735_BITS_PER_PIXEL / 8);
@@ -73,8 +73,8 @@ public:
         if (ret != ESP_OK) { DebugErr(TAG, "SPI bus init failed: %s", esp_err_to_name(ret)); goto err_spi_bus; }
 
         // --- LCD panel IO ---
-        io_cfg.dc_gpio_num         = RENDER_PIN_DATACOMMAND;
-        io_cfg.cs_gpio_num         = RENDER_PIN_CHIPSELECT;
+        io_cfg.dc_gpio_num         = Settings.hardware.display.dc;
+        io_cfg.cs_gpio_num         = Settings.hardware.display.cs;
         io_cfg.pclk_hz             = ST7735_SPI_CLOCK_HZ;
         io_cfg.lcd_cmd_bits        = ST7735_CMD_BITS;
         io_cfg.lcd_param_bits      = ST7735_PARAM_BITS;
@@ -86,7 +86,7 @@ public:
         if (ret != ESP_OK) { DebugErr(TAG, "Panel IO init failed: %s", esp_err_to_name(ret)); goto err_panel_io; }
 
         // --- ST7735 panel ---
-        panel_cfg.reset_gpio_num = RENDER_PIN_RESET;
+        panel_cfg.reset_gpio_num = Settings.hardware.display.rst;
         panel_cfg.rgb_endian     = LCD_RGB_ENDIAN_RGB;
         panel_cfg.bits_per_pixel = ST7735_BITS_PER_PIXEL;
         ret = esp_lcd_new_panel_st7735(m_io, &panel_cfg, &m_panel);

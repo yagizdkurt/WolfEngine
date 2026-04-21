@@ -11,9 +11,9 @@
 // =============================================================
 class WETime {
 public:
-    //  Fixed time step in seconds, calculated from TARGET_FRAME_TIME_US.
+    //  Fixed time step in seconds, calculated from Settings.render.targetFrameTimeUs.
     //  Use for frame-rate independent movement
-    static constexpr float DELTA_TIME = TARGET_FRAME_TIME_US / 1000000.0f;
+    static constexpr float DELTA_TIME = Settings.render.targetFrameTimeUs / 1000000.0f;
 
     static int64_t realNow();    // get real life time in milliseconds
     static int64_t realNowUs();  // get real life time in microseconds

@@ -33,7 +33,7 @@ void WolfEngine::StartGame() {
         m_SoundManager.update();
 
         // Only tick if enough time has passed for a 30fps frame
-        if (elapsed >= TARGET_FRAME_TIME_US) {
+        if (elapsed >= Settings.render.targetFrameTimeUs) {
             lastFrameTime = now;
             gameTick();
         }

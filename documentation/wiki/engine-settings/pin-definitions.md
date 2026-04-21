@@ -1,15 +1,15 @@
 # Pin Definitions
 
-Some GPIO pin assignments live in `WolfEngine/Settings/WE_PINDEFS.hpp`. Edit this file to match your physical wiring before building.
+GPIO assignments are configured in `WolfEngine/Settings/WE_Settings.hpp` under `Settings.hardware`.
 
 ---
 
 ## Display (SPI)
 
 ```cpp
-#define RENDER_PIN_CHIPSELECT   17
-#define RENDER_PIN_RESET         4
-#define RENDER_PIN_DATACOMMAND  16
+Settings.hardware.display.cs  = 17
+Settings.hardware.display.rst = 4
+Settings.hardware.display.dc  = 16
 ```
 
 These are screen control pins. CS, RST, and DC are required — without them the display won't initialize. Keep in mind that different screens use different pins but mostly SPI communication holds.
@@ -19,9 +19,9 @@ These are screen control pins. CS, RST, and DC are required — without them the
 ## SPI Bus
 
 ```cpp
-#define SPI_PIN_MOSI  23
-#define SPI_PIN_MISO  19
-#define SPI_PIN_SCLK  18
+Settings.hardware.spi.mosi = 23
+Settings.hardware.spi.miso = 19
+Settings.hardware.spi.sclk = 18
 ```
 
 Standard SPI bus pins shared by the display.
@@ -31,8 +31,8 @@ Standard SPI bus pins shared by the display.
 ## I2C Bus
 
 ```cpp
-#define I2C_PIN_SDA  21
-#define I2C_PIN_SCL  22
+Settings.hardware.i2c.sda = 21
+Settings.hardware.i2c.scl = 22
 ```
 
 Used by I2C devices such as the PCF8574 expander. These are the ESP32 default I2C pins and work well in most cases.

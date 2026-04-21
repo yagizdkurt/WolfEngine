@@ -1,5 +1,5 @@
 #pragma once
-#include "WolfEngine/Settings/WE_InputSettings.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 #include "WolfEngine/Drivers/IODrivers/WE_ExpanderDrivers.hpp"
 #include "WolfEngine/Drivers/IODrivers/WE_IExpander.hpp"
 #include "WolfEngine/Drivers/IODrivers/WE_PCF8574.hpp"
@@ -44,10 +44,10 @@ private:
     const ControllerSettings* m_settings = nullptr;
 
     // ── Button state ───────────────────────────────────────────
-    bool    m_currState[BUTTON_COUNT]          = {};
-    bool    m_prevState[BUTTON_COUNT]          = {};
-    bool    m_rawState[BUTTON_COUNT]           = {};
-    int64_t m_debounceTimestamp[BUTTON_COUNT]  = {};
+    bool    m_currState[Settings.input.buttonCount]          = {};
+    bool    m_prevState[Settings.input.buttonCount]          = {};
+    bool    m_rawState[Settings.input.buttonCount]           = {};
+    int64_t m_debounceTimestamp[Settings.input.buttonCount]  = {};
 
     // ── Joystick ───────────────────────────────────────────────
     adc_oneshot_unit_handle_t m_adcHandle = nullptr;

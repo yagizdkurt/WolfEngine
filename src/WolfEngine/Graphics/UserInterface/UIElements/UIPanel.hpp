@@ -34,7 +34,7 @@ class UIPanel : public BaseUIElement {
 public:
     uint16_t       background        = 0x0000;
     bool           backgroundEnabled = true;
-    BaseUIElement* children[WE_UI_MAX_PANEL_CHILDREN] = {};
+    BaseUIElement* children[Settings.limits.maxPanelChildren] = {};
 
     UIPanel(int16_t x, int16_t y, int16_t w, int16_t h,
             BaseUIElement** ch = nullptr,

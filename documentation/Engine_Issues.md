@@ -96,7 +96,7 @@ without editing engine source. A fast-moving game and a slow puzzle game need
 different follow speeds, and there is currently no way to configure this without
 touching the engine.
 **Maintenance note:** The follow speed should be a configurable field on `Camera`
-or a value in `WE_RenderSettings`.
+or a value under `Settings.render`.
 
 ---
 
@@ -112,7 +112,7 @@ whether the UI pass runs.
 **Impact:** On small scenes the cost is acceptable, but UI-heavy screens now submit and
 execute UI commands every frame. This increases CPU work and command-buffer pressure,
 and can contribute to dropped commands if world and UI totals approach
-`MAX_DRAW_COMMANDS`.
+`Settings.render.maxDrawCommands`.
 **Maintenance note:** If UI cost becomes visible, consider retained/cached UI commands
 or restoring a dirty-gated submission strategy.
 

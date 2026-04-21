@@ -1,6 +1,6 @@
 #pragma once
 #include <driver/i2c.h>
-#include "WolfEngine/Settings/WE_PINDEFS.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 
 // ─────────────────────────────────────────────────────────────
 //  I2CManager — static I2C bus manager
@@ -17,8 +17,8 @@
 class I2CManager {
 public:
     static constexpr i2c_port_t PORT    = I2C_NUM_0;
-    static constexpr gpio_num_t PIN_SDA = gpio_num_t(I2C_PIN_SDA);
-    static constexpr gpio_num_t PIN_SCL = gpio_num_t(I2C_PIN_SCL);
+    static constexpr gpio_num_t PIN_SDA = gpio_num_t(Settings.hardware.i2c.sda);
+    static constexpr gpio_num_t PIN_SCL = gpio_num_t(Settings.hardware.i2c.scl);
     static constexpr uint32_t   FREQ_HZ = 400000;
 
     // Maximum time any single bus transaction is allowed to take

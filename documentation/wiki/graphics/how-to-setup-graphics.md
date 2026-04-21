@@ -33,7 +33,7 @@ Use the color enums to document what each index means in your sprite:
 // 3 = PL_GS_Shade25 (highlight)
 ```
 
-See [Palette](../settings.md) for the full built-in palette reference.
+See [Settings](../engine-settings/settings.md) for related render configuration.
 > **Note:** Every palette has all the real values and explanations in their file
 > **Tip:** After you select your palette you can actually see what colors are in the palette by writing as below.
 
@@ -109,7 +109,7 @@ SpriteRenderer player     = SpriteRenderer(this, &PLAYER_SPRITE, PALETTE_GRAYSCA
 SpriteRenderer explosion  = SpriteRenderer(this, &FX_SPRITE, PALETTE_SUNSET, RenderLayer::FX);
 ```
 
-See [Render Layers](../render-layers.md) to customize the layer list.
+See [Render Layers](../engine-settings/render-layers.md) to customize the layer list.
 
 Within the same layer, sprites are sorted by draw Y by default. Use `setSortKey()` on `SpriteRenderer` if you need explicit ordering.
 

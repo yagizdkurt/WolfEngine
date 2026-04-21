@@ -51,47 +51,50 @@ Set the `Min`, `Max`, and `Center` values based on raw 12-bit ADC readings (0–
 
 ---
 
-## The INPUT_SETTINGS Struct
+## The Settings.input Block
 
-Every setting about input lives in this struct. You can edit it at `WolfEngine/Settings/WE_Settings.hpp`.
+Every input setting lives under `Settings.input` in `WolfEngine/Settings/WE_Settings.hpp`.
 
 ```cpp
-constexpr InputSettings INPUT_SETTINGS = {
-    .debounceMs     = 20,
-    .pollIntervalMs = 10,
-    // ----------------- CONTROLLERS -----------------
-    // Configuration for up to 4 controllers (players 1–4).
-    .controllers    = {
-        {   // -------------- CONTROLLER 1 --------------
-            .enabled     = true,
-                           // A    B    C    D    E    F    G    H    I    J
-            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
-            .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
-            .joyXEnabled = true,
-            .joyYEnabled = true,
-            .joyXChannel = ADC_CHANNEL_0,
-            .joyYChannel = ADC_CHANNEL_1,
-            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
-            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
-            .joyDeadzone = 0.1f,
-            .activeLow   = true,
+inline constexpr EngineConfig Settings = {
+    .input = {
+        .debounceMs     = 20,
+        .pollIntervalMs = 10,
+        .buttonCount    = kButtonCount,
+        // ----------------- CONTROLLERS -----------------
+        // Configuration for up to 4 controllers (players 1–4).
+        .controllers    = {
+            {   // -------------- CONTROLLER 1 --------------
+                .enabled     = true,
+                               // A    B    C    D    E    F    G    H    I    J
+                .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+                .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+                .joyXEnabled = true,
+                .joyYEnabled = true,
+                .joyXChannel = ADC_CHANNEL_0,
+                .joyYChannel = ADC_CHANNEL_1,
+                .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+                .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+                .joyDeadzone = 0.1f,
+                .activeLow   = true,
+            },
+            {   // ------------- CONTROLLER 2 --------------
+                .enabled     = true,
+                               // A    B    C    D    E    F    G    H    I    J
+                .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+                .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+                .joyXEnabled = false,
+                .joyYEnabled = false,
+                .joyXChannel = ADC_CHANNEL_0,
+                .joyYChannel = ADC_CHANNEL_0,
+                .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+                .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+                .joyDeadzone = 0.1f,
+                .activeLow   = true,
+            },
+            // ...
         },
-        {   // ------------- CONTROLLER 2 --------------
-            .enabled     = true,
-                           // A    B    C    D    E    F    G    H    I    J
-            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
-            .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
-            .joyXEnabled = false,
-            .joyYEnabled = false,
-            .joyXChannel = ADC_CHANNEL_0,
-            .joyYChannel = ADC_CHANNEL_0,
-            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
-            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
-            .joyDeadzone = 0.1f,
-            .activeLow   = true,
-        },
-        // ...
-    }
+    },
 };
 ```
 
@@ -131,4 +134,4 @@ To use an expander, set the `.type` and `.addr` in the `expander` struct, then m
 
 > **Hybrid Wiring:** You can mix GPIO and Expander pins. If a button has both a gpioPins entry AND an expander.pins entry, the GPIO pin takes priority. Set unused slots to -1.
 
-> **Current behavior note:** `pollIntervalMs` exists in `InputSettings`, but input polling currently runs once per engine tick.
+> **Current behavior note:** `pollIntervalMs` exists in `Settings.input`, but input polling currently runs once per engine tick.

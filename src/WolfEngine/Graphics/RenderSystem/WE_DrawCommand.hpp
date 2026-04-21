@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <type_traits>
-#include "WolfEngine/Settings/WE_Layers.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 #include "WolfEngine/Graphics/SpriteSystem/WE_SpriteRotation.hpp"
 
 // =============================================================
@@ -20,7 +20,7 @@
 //    3) Put wider fields (uint16_t, pointers) before narrow ones to
 //       avoid alignment holes; adjust _free count to reach 12 exactly.
 //    4) If size must increase, update the limit intentionally and
-//       re-evaluate RAM cost: MAX_DRAW_COMMANDS * sizeof(DrawCommand).
+//       re-evaluate RAM cost: Settings.render.maxDrawCommands * sizeof(DrawCommand).
 // =============================================================
 enum class DrawCommandType : uint8_t {
     Sprite,

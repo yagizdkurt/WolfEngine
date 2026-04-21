@@ -42,7 +42,7 @@ extern "C" void app_main() {
 
 ## Tick Order
 
-Inside the running loop, sound is updated continuously. A full game tick is executed whenever elapsed time reaches `TARGET_FRAME_TIME_US`:
+Inside the running loop, sound is updated continuously. A full game tick is executed whenever elapsed time reaches `Settings.render.targetFrameTimeUs`:
 
 1. Input tick
 2. Module update

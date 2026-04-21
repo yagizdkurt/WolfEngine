@@ -89,7 +89,7 @@ Render layers themselves do not allocate a per-layer sprite slot table anymore.
 
 Renderer command memory is now primarily:
 
-- `MAX_DRAW_COMMANDS * sizeof(DrawCommand)` for the shared command buffer
+- `Settings.render.maxDrawCommands * sizeof(DrawCommand)` for the shared command buffer
 - `sizeof(FrameDiagnostics)` for runtime counters
 
-With the default `MAX_DRAW_COMMANDS = 128` on ESP32, this is currently about `128 * 20 + 8 = 2568` bytes for the current command layout plus diagnostics.
+With the default `Settings.render.maxDrawCommands = 128` on ESP32, this is currently about `128 * 20 + 8 = 2568` bytes for the current command layout plus diagnostics.

@@ -1,5 +1,5 @@
 #include "WE_SoundManager.hpp"
-#include "WolfEngine/Settings/WE_PINDEFS.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 #include "esp_timer.h"
 
 // ─── Public ────────────────────────────────────────────────────────────────
@@ -72,8 +72,8 @@ void SoundManager::update() {
 }
 
 void SoundManager::Initialize() {
-    _initChannel(MUSIC_PIN, LEDC_CHANNEL_0);
-    _initChannel(SFX_PIN,   LEDC_CHANNEL_1);
+    _initChannel(Settings.hardware.sound.music, LEDC_CHANNEL_0);
+    _initChannel(Settings.hardware.sound.sfx,   LEDC_CHANNEL_1);
 }
 
 void SoundManager::_startChannel(Channel& ch, const SoundClip* sound, bool loop, void (*onFinish)()) {

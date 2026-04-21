@@ -28,7 +28,6 @@
 
 // =============== Engine Settings ================
 #include "WolfEngine/Settings/WE_Settings.hpp"
-#include "WolfEngine/Settings/WE_PINDEFS.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_DrawCommand.hpp"
 
 // =============== Driver Selection ================
@@ -73,7 +72,7 @@ private:
     DisplayDriver* m_driver;
     uint16_t m_framebuffer[RENDER_SCREEN_WIDTH * RENDER_SCREEN_HEIGHT];
 
-    DrawCommand      m_commandBuffer[MAX_DRAW_COMMANDS];
+    DrawCommand      m_commandBuffer[Settings.render.maxDrawCommands];
     uint16_t         m_commandCount = 0;
     FrameDiagnostics m_diagnostics  = {};
 

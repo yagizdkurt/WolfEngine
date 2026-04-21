@@ -1,5 +1,9 @@
 #pragma once
 
+// Number of buttons per controller slot. Governs the pins[] array size here and
+// gpioPins[] in ControllerSettings. Change only if adding/removing button inputs.
+inline constexpr int kButtonCount = 10;
+
 // -------------------------------------------------------------
 //  Identifies which I/O expander chip is used by a controller.
 //  Set to None if all buttons are wired directly to GPIO.
@@ -23,5 +27,5 @@ enum class ExpanderType {
 struct ExpanderSettings {
     ExpanderType type;
     int          addr;
-    int          pins[10]; // one entry per button, matches BUTTON_COUNT
+    int          pins[kButtonCount]; // one entry per button — size governed by kButtonCount
 };
