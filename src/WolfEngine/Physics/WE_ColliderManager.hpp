@@ -11,7 +11,7 @@ public:
     void unregisterCollider(Collider* collider);
 
 private:
-    static constexpr int MAX_COLLIDERS = MAX_GAME_OBJECTS * 3;
+    static constexpr int MAX_COLLIDERS = Settings.limits.maxGameObjects * 3;
     static constexpr int PAIR_BITS     = (MAX_COLLIDERS * (MAX_COLLIDERS - 1)) / 2;
     static constexpr int PAIR_BYTES    = (PAIR_BITS + 7) / 8;
 

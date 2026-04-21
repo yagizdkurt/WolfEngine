@@ -13,7 +13,7 @@ void InputManager::setAlwaysEnableController0(bool value) { m_alwaysEnableContro
 Controller* InputManager::getController(int index) {
     assert(index >= 0 && index < MAX_CONTROLLERS && "getController: index out of range");
     if (m_alwaysEnableController0 && index == 0) return &m_controllers[0];
-    if (!INPUT_SETTINGS.controllers[index].enabled) return nullptr;
+    if (!Settings.input.controllers[index].enabled) return nullptr;
     return &m_controllers[index];
 }
 
@@ -22,20 +22,20 @@ void InputManager::init() {
     // ── GPIO setup for all enabled controllers ────────────────
     uint64_t pinMask = 0;
     for (int c = 0; c < MAX_CONTROLLERS; c++) {
-        if (!INPUT_SETTINGS.controllers[c].enabled) continue;
-        for (int i = 0; i < BUTTON_COUNT; i++) {
-            if (INPUT_SETTINGS.controllers[c].gpioPins[i] != -1)
-                pinMask |= (1ULL << INPUT_SETTINGS.controllers[c].gpioPins[i]);
+        if (!Settings.input.controllers[c].enabled) continue;
+        for (int i = 0; i < Settings.input.buttonCount; i++) {
+            if (Settings.input.controllers[c].gpioPins[i] != -1)
+                pinMask |= (1ULL << Settings.input.controllers[c].gpioPins[i]);
         }
     }
 
     if (pinMask != 0) {
         // Use activeLow from first enabled controller — all controllers
         // should use the same electrical configuration on one device.
-        bool activeLow = INPUT_SETTINGS.controllers[0].activeLow;
+        bool activeLow = Settings.input.controllers[0].activeLow;
         for (int c = 0; c < MAX_CONTROLLERS; c++) {
-            if (INPUT_SETTINGS.controllers[c].enabled) {
-                activeLow = INPUT_SETTINGS.controllers[c].activeLow;
+            if (Settings.input.controllers[c].enabled) {
+                activeLow = Settings.input.controllers[c].activeLow;
                 break;
             }
         }
@@ -52,9 +52,9 @@ void InputManager::init() {
     // ── ADC setup ─────────────────────────────────────────────
     bool needsAdc = false;
     for (int c = 0; c < MAX_CONTROLLERS; c++) {
-        if (!INPUT_SETTINGS.controllers[c].enabled) continue;
-        if (INPUT_SETTINGS.controllers[c].joyXEnabled ||
-            INPUT_SETTINGS.controllers[c].joyYEnabled) {
+        if (!Settings.input.controllers[c].enabled) continue;
+        if (Settings.input.controllers[c].joyXEnabled ||
+            Settings.input.controllers[c].joyYEnabled) {
             needsAdc = true;
             break;
         }
@@ -70,19 +70,19 @@ void InputManager::init() {
         chanCfg.atten    = ADC_ATTEN_DB_12;
 
         for (int c = 0; c < MAX_CONTROLLERS; c++) {
-            if (!INPUT_SETTINGS.controllers[c].enabled) continue;
-            if (INPUT_SETTINGS.controllers[c].joyXEnabled)
-                adc_oneshot_config_channel(m_adcHandle, INPUT_SETTINGS.controllers[c].joyXChannel, &chanCfg);
-            if (INPUT_SETTINGS.controllers[c].joyYEnabled)
-                adc_oneshot_config_channel(m_adcHandle, INPUT_SETTINGS.controllers[c].joyYChannel, &chanCfg);
+            if (!Settings.input.controllers[c].enabled) continue;
+            if (Settings.input.controllers[c].joyXEnabled)
+                adc_oneshot_config_channel(m_adcHandle, Settings.input.controllers[c].joyXChannel, &chanCfg);
+            if (Settings.input.controllers[c].joyYEnabled)
+                adc_oneshot_config_channel(m_adcHandle, Settings.input.controllers[c].joyYChannel, &chanCfg);
         }
     }
 
     // ── Init each enabled controller ──────────────────────────
     int64_t now = esp_timer_get_time();
     for (int c = 0; c < MAX_CONTROLLERS; c++) {
-        if (!INPUT_SETTINGS.controllers[c].enabled) continue;
-        m_controllers[c].init(INPUT_SETTINGS.controllers[c], m_adcHandle, now);
+        if (!Settings.input.controllers[c].enabled) continue;
+        m_controllers[c].init(Settings.input.controllers[c], m_adcHandle, now);
     }
 }
 
@@ -92,10 +92,10 @@ void InputManager::tick() {
         return;
     }
     int64_t now        = esp_timer_get_time();
-    int64_t debounceUs = static_cast<int64_t>(INPUT_SETTINGS.debounceMs) * 1000LL;
+    int64_t debounceUs = static_cast<int64_t>(Settings.input.debounceMs) * 1000LL;
 
     for (int c = 0; c < MAX_CONTROLLERS; c++) {
-        if (!INPUT_SETTINGS.controllers[c].enabled) continue;
+        if (!Settings.input.controllers[c].enabled) continue;
         m_controllers[c].tick(now, debounceUs);
     }
 }

@@ -3,8 +3,8 @@
 
 bool GameObject::CreateObject() {
     GameObjectRegistry& reg = Engine().m_GameObjectRegistry;
-    if (reg.count >= MAX_GAME_OBJECTS) return false;
-    for (int i = 0; i < MAX_GAME_OBJECTS; i++) {
+    if (reg.count >= Settings.limits.maxGameObjects) return false;
+    for (int i = 0; i < Settings.limits.maxGameObjects; i++) {
         if (reg.gameObjects[i] == nullptr) {
             reg.gameObjects[i] = this;
             reg.count++;

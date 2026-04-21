@@ -8,13 +8,8 @@ WolfEngine/
 ├── WolfEngine.hpp / .cpp          # Engine singleton — init + game loop
 │
 ├── Settings/                      # Compile-time configuration (no runtime config)
-│   ├── WE_Settings.hpp            # Master include: pulls all settings headers
-│   ├── WE_Modules.hpp             # Module feature flags: #define SaveLoadModule, etc.
-│   ├── WE_PINDEFS.hpp             # All GPIO, SPI, I²C pin numbers
-│   ├── WE_InputSettings.hpp       # Per-controller button map, expander type, joystick ADC
-│   ├── WE_RenderSettings.hpp      # Background color, game region rect, feature flags
-│   ├── WE_Layers.hpp              # RenderLayer enum + CollisionLayer bitmask enum
-│   └── WE_SaveSettings.hpp        # Save system: EEPROM chip list, slot definitions, integrity flag
+│   ├── WE_Settings.hpp            # User-facing settings instance + module flags + static_assert validation
+│   └── WE_ConfigTypes.hpp         # Engine config types (EngineConfig, RenderLayer, CollisionLayer, Region, etc.)
 │
 ├── GameObjectSystem/              # Entity base class and registry
 │   ├── WE_GameObject.hpp / .cpp   # Base class, factory, lifecycle, component dispatch

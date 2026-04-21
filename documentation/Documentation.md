@@ -37,7 +37,7 @@ Repository structure is in Structure.md for convenience to maintainers. You can 
 | Pattern | Where | Detail |
 |---|---|---|
 | Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C` | Accessed via global free functions (`Engine()`, `Input()`, etc.) |
-| Static module system with priority dispatch | `ModuleSystem`, `WE_ModuleSystem.cpp`, `WE_Modules.hpp` | Optional engine subsystems are listed in `WE_ModuleSystem.cpp` under `#if defined()` guards; `ModuleSystem` sorts them by priority and calls their lifecycle hooks at the right points |
+| Static module system with priority dispatch | `ModuleSystem`, `WE_ModuleSystem.cpp`, `WE_Settings.hpp` | Optional engine subsystems are listed in `WE_ModuleSystem.cpp` under `#if defined()` guards; module flags live in `WE_Settings.hpp`; `ModuleSystem` sorts modules by priority and calls lifecycle hooks |
 | Entity-Component System | `GameObjectSystem` + `ComponentSystem` | Lightweight: no archetype tables, no dynamic dispatch via vtable arrays — components are owned by the GO and ticked via direct method calls |
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
 | Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver` | Lets driver selection be decoupled from the system that uses it |
@@ -114,7 +114,7 @@ void render();                 // clear -> world pass -> UI pass -> full-screen 
 
 **Key design choices:**
 - Framebuffer is a flat `uint16_t` array of `width × height` pixels.
-- Draw operations are submitted as `DrawCommand` entries into a fixed per-frame buffer (`MAX_DRAW_COMMANDS`).
+- Draw operations are submitted as `DrawCommand` entries into a fixed per-frame buffer (`Settings.render.maxDrawCommands`).
 - Commands are sorted by a packed `sortKey` (`uint16_t`) in each pass.
 - World pass typically uses low byte as screenY; UI pass uses low byte as draw-order index.
 - Index 0 in any palette is transparent; sprite drawing skips those pixels.
@@ -241,7 +241,7 @@ float getAxis(Axis a);          // -1.0 to 1.0
 ```
 
 **Key design choices:**
-- Each controller is configured entirely by `ControllerSettings` in `WE_InputSettings.hpp`
+- Each controller is configured entirely by `Settings.input.controllers[]` in `WE_Settings.hpp`
   — no code changes needed to remap buttons.
 - Expander objects are placement-newed into a fixed buffer inside `WEController`;
   type is selected at runtime from `ExpanderType` enum.
@@ -313,7 +313,7 @@ bool isSFXPlaying();
 **Key design choices:**
 - `SoundClip` is `{Note_t frequency, uint16_t durationMs}`.
 - Music and SFX play concurrently on separate LEDC channels (pins defined in
-  `WE_PINDEFS.hpp`).
+   `Settings.hardware.sound` in `WE_Settings.hpp`).
 - Sequencing is managed by checking elapsed time each `tick()` call — no RTOS timer.
 - No volume control, no waveform mixing (see §12).
 
@@ -335,7 +335,7 @@ bool requiresByteSwap;
 ```
 
 **Concrete: ST7735**
-- SPI bus at 40 MHz, configured via `WE_PINDEFS.hpp`.
+- SPI bus at 40 MHz, configured via `Settings.hardware.spi` and `Settings.hardware.display` in `WE_Settings.hpp`.
 - Uses ESP-IDF `esp_lcd_panel_io` + `esp_lcd_panel_st7735`.
 - `flush()` triggers a DMA transfer; completion is signalled via a FreeRTOS binary
   semaphore so the CPU isn't spinning.
@@ -383,7 +383,7 @@ from `ExpanderSettings.type` at controller init time.
 | `Modules/WE_IModule.hpp` | `IModule` base all modules must inherit; `TModule<T, Priority>` CRTP helper |
 | `Modules/WE_ModuleSystem.hpp` | `ModuleSystem` class with `InitAll/UpdateAll/ShutdownAll` |
 | `Modules/WE_ModuleSystem.cpp` | All module instances and the pointer list live here |
-| `Settings/WE_Modules.hpp` | Compile-time feature flags (`#define WE_MODULE_SAVELOAD`, etc.) |
+| `Settings/WE_Settings.hpp` | Compile-time module feature flags (`#define WE_MODULE_SAVELOAD`, etc.) |
 
 **`TModule<T, Priority>` — base for all modules:**
 ```cpp
@@ -410,7 +410,7 @@ ModuleSystem::ShutdownAll();   // OnShutdown() in reverse priority order
 
 **Adding a new module — step by step:**
 1. Create your class inheriting `TModule<MyModule, Priority>` and implement whichever hooks you need.
-2. Add a feature flag in `Settings/WE_Modules.hpp`:
+2. Add a feature flag in `Settings/WE_Settings.hpp` (Module Enables section):
    ```cpp
    #define WE_MODULE_MYMODULE
    ```
@@ -428,7 +428,7 @@ ModuleSystem::ShutdownAll();   // OnShutdown() in reverse priority order
        // ...
    };
    ```
-4. Comment out the `#define` in `WE_Modules.hpp` to disable the module — it will not be compiled or linked.
+4. Comment out the `#define` in `WE_Settings.hpp` to disable the module — it will not be compiled or linked.
 
 **Accessing a module from game code:**
 ```cpp
@@ -444,7 +444,7 @@ WE_SaveManager::Get().write(SAVE_SLOT_0, myData);
 **Registered as a module via:** `WE_ModuleSystem.cpp` (guarded by `#if defined(WE_MODULE_SAVELOAD)`).
 
 **Quick setup:**
-1. Enable in `Settings/WE_Modules.hpp`: `#define WE_MODULE_SAVELOAD`
+1. Enable in `Settings/WE_Settings.hpp`: `#define WE_MODULE_SAVELOAD`
 2. Open `Settings/WE_SaveSettings.hpp`
 3. Add your EEPROM chip to `WE_SAVE_EEPROMS[]` (address + driver type)
 4. Add a named entry to the `SaveSlot` enum
@@ -504,7 +504,7 @@ When you add/remove/reorder fields in a save struct, increment `WE_SAVE_VERSION`
 ### Flow A — Frame render cycle
 
 ```
-1. StartGame() busy-waits until TARGET_FRAME_TIME_US (33 333 µs at 30 fps) has elapsed.
+1. StartGame() busy-waits until `Settings.render.targetFrameTimeUs` (33 333 us at 30 fps by default) has elapsed.
 
 2. WEInputManager::tick()
    └─ For each controller: poll GPIO or I²C expander pins
@@ -532,7 +532,7 @@ When you add/remove/reorder fields in a save struct, increment `WE_SAVE_VERSION`
 7. Camera::followTick() — lerp camera toward follow target's new position
 
 8. WERenderCore::render()
-   └─ Clear framebuffer (if cleanFramebufferEachFrame = true in RENDER_SETTINGS)
+   └─ Clear framebuffer (if `Settings.render.cleanFramebufferEachFrame` is true)
    └─ World pass:
       a. sortCommands()
       b. executeCommands() for world submissions (Sprite and any other world primitives)
@@ -597,8 +597,8 @@ When you add/remove/reorder fields in a save struct, increment `WE_SAVE_VERSION`
 | Framebuffer | Static `uint16_t[]` | RGB565, `screenWidth × screenHeight` words |
 
 **Allocation strategy:** No `new`/`delete` is used anywhere in the engine. All
-collections are fixed-size arrays sized by constants in `WE_Settings.hpp`
-(`MAX_GAME_OBJECTS`, `MAX_COLLIDERS`, etc.). This is a deliberate choice to eliminate
+collections are fixed-size arrays sized by `Settings` fields in `WE_Settings.hpp`
+(`Settings.limits.maxGameObjects`, derived capacities like collider pools, etc.). This is a deliberate choice to eliminate
 heap fragmentation.
 
 **EEPROM access:** Always go through `Save().read()` / `Save().write()` — do not use the raw `EEPROM24LC512` driver directly in game code. Writes block for 5–20 ms per 128-byte page; schedule them between levels or on pause, not inside `Update()`.
@@ -630,12 +630,8 @@ no config files read from flash, and no over-the-air configuration.
 
 | File | Controls | Change requires |
 |---|---|---|
-| `WE_Settings.hpp` | Master include — pulls all settings headers | Recompile |
-| `WE_Modules.hpp` | Module feature flags (`#define SaveLoadModule`, etc.) — comment out to disable a module entirely | Recompile |
-| `WE_PINDEFS.hpp` | All GPIO numbers: SPI, I²C, audio, display DC/Reset/CS | Recompile |
-| `WE_InputSettings.hpp` | Per-controller button→pin map, expander type & address, joystick ADC channel & calibration | Recompile |
-| `WE_RenderSettings.hpp` | Background color (RGB565), game region rect, framebuffer clear flag | Recompile |
-| `WE_Layers.hpp` | `RenderLayer` enum values, `CollisionLayer` bitmask values | Recompile + update all layer assignments |
+| `WE_Settings.hpp` | User-facing `Settings` values (hardware/render/input/limits/debug) and module feature flags | Recompile |
+| `WE_ConfigTypes.hpp` | Engine config types (`EngineConfig`, `RenderLayer`, `CollisionLayer`, etc.) | Recompile + update dependent code if types change |
 | `WE_SaveSettings.hpp` | EEPROM chip list, save slot names + sizes, integrity on/off, magic/version constants | Recompile |
 
 ### Feature flags
@@ -645,9 +641,9 @@ no config files read from flash, and no over-the-air configuration.
 | Flag | Effect |
 |---|---|
 | `DISPLAY_ST7735` | Selects ST7735 as display driver |
-| `DISPLAY_CUSTOM` | Use a custom display driver |
+| `DISPLAY_SDL` | Desktop build target (set by desktop CMake) |
 
-**Module flags** — defined in `WE_Modules.hpp` (comment out to strip module from build):
+**Module flags** — defined in `WE_Settings.hpp` (comment out to strip module from build):
 
 | Flag | Module enabled |
 |---|---|
@@ -663,8 +659,8 @@ no config files read from flash, and no over-the-air configuration.
 
 | Setting | Where | Controls |
 |---|---|---|
-| `RENDER_SETTINGS.spriteSystemEnabled` | `WE_RenderSettings.hpp` | Includes sprite registration in render loop |
-| `RENDER_SETTINGS.cleanFramebufferEachFrame` | `WE_RenderSettings.hpp` | Zeroes framebuffer each frame |
+| `Settings.render.spriteSystemEnabled` | `WE_Settings.hpp` | Enables SpriteRenderer command submission |
+| `Settings.render.cleanFramebufferEachFrame` | `WE_Settings.hpp` | Clears framebuffer each frame |
 
 ---
 

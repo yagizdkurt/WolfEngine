@@ -1,6 +1,6 @@
 #include "WE_ModuleSystem.hpp"
 #include "WE_IModule.hpp"
-#include "WolfEngine/Settings/WE_Modules.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 
 // ── Module instances ──────────────────────────────────────────────────────────
 #if defined(WE_MODULE_SAVELOAD)
@@ -14,8 +14,6 @@ static IModule* s_modules[] = {
     &s_saveLoad,
 #endif
 };
-
-
 
 
 

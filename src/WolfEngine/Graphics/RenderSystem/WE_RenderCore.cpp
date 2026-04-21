@@ -29,7 +29,7 @@ void Renderer::clearCommands() {
 //  Overflow is loud: dropped commands are counted and logged.
 // -------------------------------------------------------------
 bool Renderer::submitDrawCommand(const DrawCommand& cmd) {
-    if (m_commandCount >= MAX_DRAW_COMMANDS) {
+    if (m_commandCount >= Settings.render.maxDrawCommands) {
         if (m_diagnostics.commandsDropped == 0) {
             ESP_LOGW("Renderer", "Draw command buffer full — first drop this frame");
         }
@@ -83,8 +83,8 @@ void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
             int drawY = y + py;
 
             // Per-pixel bounds check — clip to game region
-            if (drawX < RENDER_SETTINGS.gameRegion.x1 || drawX >= RENDER_SETTINGS.gameRegion.x2) continue;
-            if (drawY < RENDER_SETTINGS.gameRegion.y1 || drawY >= RENDER_SETTINGS.gameRegion.y2) continue;
+            if (drawX < Settings.render.gameRegion.x1 || drawX >= Settings.render.gameRegion.x2) continue;
+            if (drawY < Settings.render.gameRegion.y1 || drawY >= Settings.render.gameRegion.y2) continue;
 
             // Palette lookup and write to framebuffer
             uint16_t color = palette[paletteIndex];
@@ -298,8 +298,8 @@ void Renderer::beginFrame() {
     m_diagnostics.commandsExecuted  = 0;
 
     // Clear framebuffer to background color if enabled in settings
-    if constexpr (RENDER_SETTINGS.cleanFramebufferEachFrame) {
-        constexpr uint16_t bg         = RENDER_SETTINGS.defaultBackgroundPixel;
+    if constexpr (Settings.render.cleanFramebufferEachFrame) {
+        constexpr uint16_t bg         = Settings.render.defaultBackgroundPixel;
         constexpr uint16_t bgSwapped  = (bg >> 8) | (bg << 8);
         const uint16_t fill = m_driver->requiresByteSwap ? bgSwapped : bg;
         std::fill( m_framebuffer, m_framebuffer + m_driver->screenWidth * m_driver->screenHeight, fill );

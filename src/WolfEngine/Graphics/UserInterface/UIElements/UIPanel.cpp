@@ -18,7 +18,7 @@ UIPanel::UIPanel(int16_t x, int16_t y, int16_t w, int16_t h,
     this->background        = background;
     this->backgroundEnabled = backgroundEnabled;
     if (ch) {
-        for (uint8_t i = 0; i < WE_UI_MAX_PANEL_CHILDREN && ch[i]; ++i)
+        for (uint8_t i = 0; i < Settings.limits.maxPanelChildren && ch[i]; ++i)
             this->children[i] = ch[i];
     }
 }
@@ -47,7 +47,7 @@ void UIPanel::draw(UIManager& mgr, int16_t offX, int16_t offY) {
         RenderSys().submitDrawCommand(bg);
     }
 
-    for (uint8_t i = 0; i < WE_UI_MAX_PANEL_CHILDREN; ++i) {
+    for (uint8_t i = 0; i < Settings.limits.maxPanelChildren; ++i) {
         BaseUIElement* child = children[i];
         if (!child || child == this) continue;
         child->m_manager   = m_manager;

@@ -3,7 +3,7 @@
 #include "WE_BaseComp.hpp"
 #include "WE_Comp_SpriteRenderer.hpp"
 #include "WolfEngine/GameObjectSystem/WE_GameObject.hpp"
-#include "WolfEngine/Settings/WE_Layers.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 
 class ColliderManager;
 enum class ColliderShape : uint8_t { Box, Circle };

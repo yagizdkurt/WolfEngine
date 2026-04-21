@@ -95,15 +95,15 @@ void stopAll();
 
 ## Wiring
 
-Pins are defined in `WE_PINDEFS.hpp`:
+Pins are configured in `WE_Settings.hpp`:
 
 ```cpp
-#define MUSIC_PIN 14
-#define SFX_PIN   32
+Settings.hardware.sound.music = 14
+Settings.hardware.sound.sfx   = 32
 ```
 
 See:  
-➡ [Pin Definitions](../pin-definitions.md)
+➡ [Pin Definitions](../engine-settings/pin-definitions.md)
 
 ---
 
@@ -163,4 +163,4 @@ bool isPlaying(const SoundClip* sound) const;
 
 ## Related Pages
 
-- [Pin Definitions](../pin-definitions.md)
+- [Pin Definitions](../engine-settings/pin-definitions.md)

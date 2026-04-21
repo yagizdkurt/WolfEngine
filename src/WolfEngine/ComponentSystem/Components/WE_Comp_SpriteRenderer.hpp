@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include "WolfEngine/Graphics/SpriteSystem/WE_Sprite.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_DrawCommand.hpp"
-#include "WolfEngine/Settings/WE_Layers.hpp"
+#include "WolfEngine/Settings/WE_Settings.hpp"
 #include "WE_BaseComp.hpp"
 
 // =============================================================

@@ -50,7 +50,7 @@ image. There are no processes, no IPC, no network services.
 | Pattern | Where | Detail |
 |---|---|---|
 | Singleton | `WolfEngine`, `WEInputManager`, `WECamera`, `WEUIManager`, `WESoundManager`, `WEI2C` | Accessed via global free functions (`Engine()`, `Input()`, etc.) |
-| Static module system with priority dispatch | `ModuleSystem`, `WE_ModuleSystem.cpp`, `WE_Modules.hpp` | Optional subsystems are listed in `WE_ModuleSystem.cpp` under `#if defined()` guards; `ModuleSystem::InitAll()` insertion-sorts by `Priority` (descending) then calls `OnInit()` on each |
+| Static module system with priority dispatch | `ModuleSystem`, `WE_ModuleSystem.cpp`, `WE_Settings.hpp` | Optional subsystems are listed in `WE_ModuleSystem.cpp` under `#if defined()` guards; module feature flags live in `WE_Settings.hpp`; `ModuleSystem::InitAll()` insertion-sorts by `Priority` (descending) then calls `OnInit()` on each |
 | Entity-Component System | `GameObjectSystem` + `ComponentSystem` | Lightweight: no archetype tables, no dynamic dispatch via vtable arrays — components are owned by the GO and ticked via direct method calls |
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
 | Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver`, `WE_IInputProvider` | Lets driver selection be a compile-time `#if` in settings or a runtime enum dispatch; `IInputProvider` is injected at runtime via `setInputProvider()` |
@@ -98,7 +98,7 @@ void render();                 // clear -> world pass -> UI pass -> full-screen 
 
 **Key design choices:**
 - Framebuffer is a flat `uint16_t` array of `width × height` pixels.
-- Draw operations are submitted as `DrawCommand` entries into a fixed per-frame buffer (`MAX_DRAW_COMMANDS`).
+- Draw operations are submitted as `DrawCommand` entries into a fixed per-frame buffer (`Settings.render.maxDrawCommands`).
 - Commands are sorted by a packed `sortKey` (`uint16_t`) in each render pass.
 - World pass typically uses low byte as screenY; UI pass uses low byte as draw-order index.
 - Index 0 in any palette is transparent; sprite drawing skips those pixels.
@@ -214,7 +214,7 @@ float getAxis(JoyAxis a);       // -1.0 to 1.0
 ```
 
 **Key design choices:**
-- Each controller is configured entirely by `ControllerSettings` in `WE_InputSettings.hpp`
+- Each controller is configured entirely by `Settings.input.controllers[]` in `WE_Settings.hpp`
   — no code changes needed to remap buttons.
 - Expander objects are placement-newed into a fixed buffer inside `Controller`;
   type is selected at runtime from `ExpanderType` enum.
@@ -285,7 +285,7 @@ bool isSFXPlaying();
 **Key design choices:**
 - `SoundClip` is `{Note_t frequency, uint16_t durationMs}`.
 - Music and SFX play concurrently on separate LEDC channels (pins defined in
-  `WE_PINDEFS.hpp`).
+  `Settings.hardware.sound` in `WE_Settings.hpp`).
 - Sequencing is managed by checking elapsed time each `tick()` call — no RTOS timer.
 - No volume control, no waveform mixing (see §12).
 
@@ -305,7 +305,7 @@ bool requiresByteSwap;
 ```
 
 **Concrete: ST7735**
-- SPI bus at 40 MHz, configured via `WE_PINDEFS.hpp`.
+- SPI bus at 40 MHz, configured via `Settings.hardware.spi` and `Settings.hardware.display` in `WE_Settings.hpp`.
 - Uses ESP-IDF `esp_lcd_panel_io` + `esp_lcd_panel_st7735`.
 - `flush()` triggers a DMA transfer; completion is signalled via a FreeRTOS binary
   semaphore so the CPU isn't spinning.
@@ -348,7 +348,7 @@ from `ExpanderSettings.type` at controller init time.
 | `Modules/WE_IModule.hpp` | `IModule` base: `Name`/`Priority` public fields, private `OnInit/OnUpdate/OnShutdown`; `TModule<T, Priority>` CRTP helper |
 | `Modules/WE_ModuleSystem.hpp` | `ModuleSystem` class: declares `InitAll/UpdateAll/ShutdownAll` (only `WolfEngine` may call them) |
 | `Modules/WE_ModuleSystem.cpp` | Owns all module instances and the `IModule*[]` list; `InitAll` sorts then calls hooks |
-| `Settings/WE_Modules.hpp` | Feature flags — `#define WE_MODULE_SAVELOAD`, etc. Controls which `#if` blocks compile |
+| `Settings/WE_Settings.hpp` | Feature flags — `#define WE_MODULE_SAVELOAD`, etc. Controls which `#if` blocks compile |
 
 **IModule / TModule interface:**
 ```cpp
@@ -409,7 +409,7 @@ WE_SaveManager::Get().write(SAVE_SLOT_0, myData);
 
 **Adding a new module:**
 1. Inherit `TModule<MyModule, Priority>`, implement desired hooks.
-2. `#define WE_MODULE_MYMODULE` in `Settings/WE_Modules.hpp`.
+2. `#define WE_MODULE_MYMODULE` in `Settings/WE_Settings.hpp` (Module Enables section).
 3. In `WE_ModuleSystem.cpp`: add `static MyModule s_myModule` and `&s_myModule` to `s_modules[]` under `#if defined(WE_MODULE_MYMODULE)`.
 
 ---
@@ -474,13 +474,9 @@ no config files read from flash, and no over-the-air configuration.
 ### Settings files (all in `Settings/`)
 
 | File | Controls |
-|---|---|---|
-| `WE_Settings.hpp` | Master include — pulls all settings headers |
-| `WE_Modules.hpp` | Module feature flags (`#define SaveLoadModule`, etc.) — comment out to disable |
-| `WE_PINDEFS.hpp` | All GPIO numbers: SPI, I²C, audio, display DC/Reset/CS |
-| `WE_InputSettings.hpp` | Per-controller button→pin map, expander type & address, joystick ADC channel & calibration |
-| `WE_RenderSettings.hpp` | Background color (RGB565), game region rect, framebuffer clear flag |
-| `WE_Layers.hpp` | `RenderLayer` enum values, `CollisionLayer` bitmask values |
+|---|---|
+| `WE_Settings.hpp` | User-facing `Settings` values (hardware/render/input/limits/debug) and module feature flags |
+| `WE_ConfigTypes.hpp` | Engine config types (`EngineConfig`, `RenderLayer`, `CollisionLayer`, etc.) |
 | `WE_SaveSettings.hpp` | EEPROM chip list, slot definitions + sizes, integrity flag, magic/version constants |
 
 ---

@@ -1,6 +1,8 @@
 # General Settings
 
-WolfEngine uses a set of settings files to configure the engine before compilation. Each file is focused on a specific system. This page covers the main engine-wide settings. For system-specific settings see the references below.
+WolfEngine configuration is centralized in `WolfEngine/Settings/WE_Settings.hpp` as a single `inline constexpr EngineConfig Settings` object.
+
+All runtime systems read from `Settings.domain.field`.
 
 ---
 
@@ -8,23 +10,22 @@ WolfEngine uses a set of settings files to configure the engine before compilati
 
 | File                | Purpose                                                      |
 |---------------------|--------------------------------------------------------------|
-| `WE_Settings.hpp`   | Engine-wide settings — Input, frame rate, display target, renderer |
-| `WE_PINDEFS.hpp`    | SPI and display GPIO pin assignments — see [Pin Definitions](pin-definitions.md) |
-| `WE_Layers.hpp`     | Layer order for sprite/collision systems — see [Render Layers](render-layers.md) |
+| `WE_Settings.hpp`   | User-facing `Settings` instance values (hardware/render/input/limits/debug) |
+| `WE_ConfigTypes.hpp`| Engine-owned config types (`EngineConfig`, `RenderLayer`, `CollisionLayer`, `Region`, etc.) |
 
-> These files live in `WolfEngine/Settings/`. Edit them to match your hardware and project needs before building.
+> Both files live in `WolfEngine/Settings/`. Edit values in `WE_Settings.hpp` for project customization.
 
 ---
 
 ## Frame Rate
 
 ```cpp
-#define TARGET_FRAME_TIME_US 33333
+.targetFrameTimeUs = 33333,
 ```
 
 Target frame time in microseconds. The engine tries to maintain this frame duration each loop iteration.
 
-`1,000,000 / TARGET_FRAME_TIME_US` gives you the target FPS. Common values:
+`1,000,000 / Settings.render.targetFrameTimeUs` gives the target FPS. Common values:
 
 | FPS | Value   |
 |-----|---------|
@@ -40,7 +41,7 @@ Current renderer behavior is a two-pass world+UI command execution followed by a
 
 ## Game Object Settings
 ```cpp
-#define MAX_GAME_OBJECTS 64
+.maxGameObjects = 64,
 ```
 
 Maximum number of GameObjects that can exist at the same time. If `GameObject::Create<T>()` is called when the registry is full it returns `nullptr`. Always check the return value when creating objects dynamically:
@@ -55,7 +56,9 @@ if (!b) {
 
 **Choosing a value:** 64 is sufficient for most small games. A typical setup might be 1 player + 10 enemies + 20 bullets + 10 pickups = 41 objects peak. If your game spawns many short-lived objects like particles or projectiles, increase this accordingly.
 
-**Memory impact:** Each slot in the registry is a pointer (4 bytes on ESP32), so the registry itself is `MAX_GAME_OBJECTS * 4` bytes. The objects themselves live on the heap — their size depends on what members you add. Keep this in mind on ESP32 where total RAM is 520KB.
+**Memory impact:** Each slot in the registry is a pointer (4 bytes on ESP32), so the registry itself is `Settings.limits.maxGameObjects * 4` bytes. The objects themselves live on the heap — their size depends on what members you add. Keep this in mind on ESP32 where total RAM is 520KB.
+
+**Valid range:** `maxGameObjects` is `uint8_t` and validated with static assertions; keep it in `1..255`.
 
 ---
 
@@ -63,27 +66,28 @@ if (!b) {
 
 ```cpp
 #define DISPLAY_ST7735
-// #define DISPLAY_CUSTOM
+// DISPLAY_SDL is provided by desktop CMake (-DDISPLAY_SDL)
 ```
 
-Selects which display driver the renderer compiles against. Only one should be defined at a time. `DISPLAY_ST7735` targets the ST7735 128x160 TFT. `DISPLAY_CUSTOM` allows plugging in a custom driver implementation.
+Display target is selected by compile definitions. `WE_Settings.hpp` defines `DISPLAY_ST7735` by default when `DISPLAY_SDL` is not present.
 
 ---
 
 ## Render Settings
 
 ```cpp
-constexpr RenderSettings RENDER_SETTINGS = {
-    .defaultBackgroundPixel = 0x0000,
+.render = {
     .gameRegion = { 0, 0, 128, 108 },
+    .maxDrawCommands = 128,
+    .defaultBackgroundPixel = 0x0000,
     .spriteSystemEnabled = true,
-    .cleanFramebufferEachFrame = true
-};
-
-static constexpr uint16_t MAX_DRAW_COMMANDS = 128;
+    .cleanFramebufferEachFrame = true,
+    .targetFrameTimeUs = 33333,
+    .displayTarget = DisplayTarget::ST7735,
+},
 ```
 
-`MAX_DRAW_COMMANDS` controls command buffer capacity per frame. If the buffer fills, extra commands are dropped and counted in renderer diagnostics (the renderer logs only the first drop in that frame).
+`Settings.render.maxDrawCommands` controls command buffer capacity per frame. If the buffer fills, extra commands are dropped and counted in renderer diagnostics (the renderer logs only the first drop in that frame).
 
 ### defaultBackgroundPixel:
 

@@ -1,159 +1,155 @@
 #pragma once
-#include "WE_PINDEFS.hpp"
-#include "WE_InputSettings.hpp"
-#include "WE_Layers.hpp"
-#include "WE_RenderSettings.hpp"
+#include "WE_ConfigTypes.hpp"
+
+// ── Display target selector ─────────────────────────────────────────────────
+// DISPLAY_SDL is injected by the desktop CMake build (-DDISPLAY_SDL).
+// The macro must remain defined here so WE_RenderCore.hpp can use it in
+// #if defined(DISPLAY_ST7735) for conditional driver #includes — that usage
+// cannot be replaced by an enum.
+#ifndef DISPLAY_SDL
+    #define DISPLAY_ST7735
+#endif
+
+// ── Module Enables ───────────────────────────────────────────────────────────
+// Comment out a line to disable the corresponding engine module.
+// These macros gate both #include directives and static variable declarations
+// in WE_ModuleSystem.cpp — if constexpr cannot replace them.
+#define WE_MODULE_SAVELOAD
 
 /*
 ============================================================================================
-WOLF ENGINE PRECOMPİLE SETTINGS HEADER FILE
-This file contains all the necessary settings and configurations for the Wolf Engine conditional compilation. 
-It only includes settings that matters before the engine is compiled, such as display target for the renderer,
-input device configurations, audio settings, and other engine-wide configurations. Not like settings for game.
-Never include this in any of your files. Include WolfEngine.hpp instead.
+ WOLF ENGINE SETTINGS
+ User-facing configuration. Edit the values inside the Settings initializer below.
+ All engine systems read from Settings.domain.field — never from the old macros.
+
+ To add a new setting:
+   1. Add a field to the appropriate struct in WE_ConfigTypes.hpp.
+   2. Set the value in the Settings initializer below.
+   3. Add a static_assert in the validation block if the value has a valid range.
 ============================================================================================
 */
 
-#pragma region InputSettings
+inline constexpr EngineConfig Settings = {
 
-// =================== INPUT SETTINGS =======================
-// QUICK SETUP:
-//   1. Set enabled = true for each controller slot you are using (up to 4).
-//
-//   2. Assign ESP32 GPIO pins in gpioPins for buttons wired directly to the ESP32.
-//
-//   3. If buttons are routed through an I/O expander, set expander.type to the
-//      correct chip, expander.addr to its I2C address, and fill in expander.pins.
-//
-//   4. Set unused pins to -1 to disable them entirely.
-//
-//   5. If using a joystick, set joyXEnabled/joyYEnabled to true and assign
-//      the correct ADC channels and calibration values.
-//
-//   6. debounceMs and pollIntervalMs apply to all controllers globally.
-// ──────────────────────────────────────────────────────────────────────────────
+    // ── Hardware ─────────────────────────────────────────────────────────────
+    .hardware = {
+        .i2c     = { .sda = 21, .scl = 22 },
+        .spi     = { .mosi = 23, .miso = 19, .sclk = 18 },
+        .display = { .cs = 17, .rst = 4, .dc = 16 },
+        .sound   = { .music = 14, .sfx = 32 },
+    },
 
-constexpr InputSettings INPUT_SETTINGS = {
-    .debounceMs     = 20,
-
-    .pollIntervalMs = 10,
-
-    // ----------------- CONTROLLERS -----------------
-    // Configuration for up to 4 controllers (players 1–4).
-    .controllers    = {
-
-        {   // -------------- CONTROLLER 1 --------------
-            .enabled     = true,
-                           // A    B    C    D    E    F    G    H    I    J
-            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
-            .expander    = { ExpanderType::PCF8574, 0x20, {0,1,2,3,-1,-1,-1,-1,-1,-1} },
-            .joyXEnabled = true,
-            .joyYEnabled = true,
-            .joyXChannel = ADC_CHANNEL_6,
-            .joyYChannel = ADC_CHANNEL_7,
-            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
-            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
-            .joyDeadzone = 0.1f,
-            .activeLow   = true,
-        },
-    
-        {   // ------------- CONTROLLER 2 --------------
-            .enabled     = false,
-                           // A    B    C    D    E    F    G    H    I    J
-            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
-            .expander    = { ExpanderType::PCF8574, 0x20, {1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
-            .joyXEnabled = false,
-            .joyYEnabled = false,
-            .joyXChannel = ADC_CHANNEL_0,
-            .joyYChannel = ADC_CHANNEL_0,
-            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
-            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
-            .joyDeadzone = 0.1f,
-            .activeLow   = true,
-        },
-
-        {   // ------------- CONTROLLER 3 --------------
-            .enabled     = false,
-                           // A    B    C    D    E    F    G    H    I    J
-            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
-            .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
-            .joyXEnabled = false,
-            .joyYEnabled = false,
-            .joyXChannel = ADC_CHANNEL_0,
-            .joyYChannel = ADC_CHANNEL_0,
-            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
-            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
-            .joyDeadzone = 0.1f,
-            .activeLow   = true,
-        },
-
-        {   // ------------- CONTROLLER 4 --------------
-            .enabled     = false,
-                           // A    B    C    D    E    F    G    H    I    J
-            .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
-            .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
-            .joyXEnabled = false,
-            .joyYEnabled = false,
-            .joyXChannel = ADC_CHANNEL_0,
-            .joyYChannel = ADC_CHANNEL_0,
-            .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
-            .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
-            .joyDeadzone = 0.1f,
-            .activeLow   = true,
-        },
-
-    }
-
-};
-
-#pragma endregion
-
-
-// ==================== ENGINE GENERAL SETTINGS ==================
-
-// Target frame time in microseconds (1,000,000 / 30 = 33,333us)
-#define TARGET_FRAME_TIME_US 33333
-
-// =================== GAME OBJECT SETTINGS =======================
-#define MAX_GAME_OBJECTS 64
-
-// =================== UI SETTINGS =======================
-static constexpr uint8_t WE_UI_MAX_PANEL_CHILDREN = 10;
-
-
-#pragma region RenderSettings
-
-// =================== RENDERER SETTINGS =======================
-
-// ==== Display Target ====
-// Define exactly one display target — do not define more than one simultaneously.
-// The default (DISPLAY_ST7735) can be overridden at build time by passing a
-// compiler flag (e.g. -DDISPLAY_SDL), which is how the desktop CMake build
-// selects its display driver.
-#ifndef DISPLAY_SDL
-    #define DISPLAY_ST7735
-    //#define DISPLAY_OTHER
+    // ── Renderer ─────────────────────────────────────────────────────────────
+    .render = {
+        // Rectangular area of the screen used for game rendering. { x1, y1, x2, y2 }
+        .gameRegion              = { 0, 0, 128, 108 },
+        // Maximum DrawCommands that can be submitted per frame. Tune based on peak sprite count.
+        .maxDrawCommands         = 128,
+        // Background color in RGB565 format. 0x0000 = Black, 0xFFFF = White.
+        .defaultBackgroundPixel  = 0x0000,
+        // Set to false to disable sprite rendering.
+        .spriteSystemEnabled     = true,
+        // Set to false to disable automatic framebuffer clear each frame.
+        .cleanFramebufferEachFrame = true,
+        // Target frame time in microseconds (1,000,000 / 30 = 33,333 us).
+        .targetFrameTimeUs       = 33333,
+        // Display target — set automatically from the DISPLAY_SDL / DISPLAY_ST7735 macro above.
+#ifdef DISPLAY_SDL
+        .displayTarget           = DisplayTarget::SDL,
+#else
+        .displayTarget           = DisplayTarget::ST7735,
 #endif
+    },
 
+    // ── Input ────────────────────────────────────────────────────────────────
+    .input = {
+        // Software debounce window in milliseconds.
+        .debounceMs     = 20,
+        // How often (in ms) all controllers are polled.
+        .pollIntervalMs = 10,
+        // Number of buttons per controller. Must equal kButtonCount.
+        .buttonCount    = kButtonCount,
 
-constexpr RenderSettings RENDER_SETTINGS = {
-    // Background color shown anywhere no sprite covers the screen.
-    // RGB565 format (16-bit): RRRRRGGGGGGBBBBB , Common values: 0x0000 Black, 0xFFFF White, 0xF800 Red, 0x001F Blue, 0x07E0 Green
-    .defaultBackgroundPixel = 0x0000,
+        .controllers    = {
 
-    // Rectangular area of the screen used for game rendering. { x1, y1, x2, y2 }
-    // x1, y1 — top-left corner (inclusive), x2, y2 — bottom-right corner (inclusive)
-    .gameRegion = { 0, 0, 128, 108 },
+            {   // ── Controller 1 ──────────────────────────────────────────
+                .enabled     = true,
+                             // A    B    C    D    E    F    G    H    I    J
+                .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+                .expander    = { ExpanderType::PCF8574, 0x20, {0,1,2,3,-1,-1,-1,-1,-1,-1} },
+                .joyXEnabled = true,
+                .joyYEnabled = true,
+                .joyXChannel = ADC_CHANNEL_6,
+                .joyYChannel = ADC_CHANNEL_7,
+                .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+                .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+                .joyDeadzone = 0.1f,
+                .activeLow   = true,
+            },
 
-    // Set to false to disable sprite rendering to set framebuffer pixels directly.
-    .spriteSystemEnabled = true,
+            {   // ── Controller 2 ──────────────────────────────────────────
+                .enabled     = false,
+                             // A    B    C    D    E    F    G    H    I    J
+                .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+                .expander    = { ExpanderType::PCF8574, 0x20, {1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+                .joyXEnabled = false,
+                .joyYEnabled = false,
+                .joyXChannel = ADC_CHANNEL_0,
+                .joyYChannel = ADC_CHANNEL_0,
+                .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+                .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+                .joyDeadzone = 0.1f,
+                .activeLow   = true,
+            },
 
-    // Set to false to disable automatic clearing of the framebuffer each frame.
-    .cleanFramebufferEachFrame = true
+            {   // ── Controller 3 ──────────────────────────────────────────
+                .enabled     = false,
+                             // A    B    C    D    E    F    G    H    I    J
+                .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+                .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+                .joyXEnabled = false,
+                .joyYEnabled = false,
+                .joyXChannel = ADC_CHANNEL_0,
+                .joyYChannel = ADC_CHANNEL_0,
+                .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+                .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+                .joyDeadzone = 0.1f,
+                .activeLow   = true,
+            },
 
+            {   // ── Controller 4 ──────────────────────────────────────────
+                .enabled     = false,
+                             // A    B    C    D    E    F    G    H    I    J
+                .gpioPins    = { -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1 },
+                .expander    = { ExpanderType::None, -1, {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1} },
+                .joyXEnabled = false,
+                .joyYEnabled = false,
+                .joyXChannel = ADC_CHANNEL_0,
+                .joyYChannel = ADC_CHANNEL_0,
+                .joyXMin = 0, .joyXMax = 4095, .joyXCenter = 2048,
+                .joyYMin = 0, .joyYMax = 4095, .joyYCenter = 2048,
+                .joyDeadzone = 0.1f,
+                .activeLow   = true,
+            },
+        },
+    },
+
+    // ── Limits ───────────────────────────────────────────────────────────────
+    .limits = {
+        .maxGameObjects   = 64,
+        .maxPanelChildren = 10,
+    },
+
+    // ── Debug ────────────────────────────────────────────────────────────────
+    .debug = {},
 };
 
-#pragma endregion
-
-
-
+// ── Validation ───────────────────────────────────────────────────────────────
+static_assert(Settings.limits.maxGameObjects > 0 && Settings.limits.maxGameObjects <= 255,
+    "maxGameObjects must be between 1 and 255 — live counter in WE_GORegistry is uint8_t");
+static_assert(Settings.limits.maxPanelChildren > 0 && Settings.limits.maxPanelChildren <= 255,
+    "maxPanelChildren must be between 1 and 255 — iterator in UIPanel is uint8_t");
+static_assert(Settings.render.maxDrawCommands  > 0,  "maxDrawCommands must be > 0");
+static_assert(Settings.render.targetFrameTimeUs > 0, "targetFrameTimeUs must be > 0");
+static_assert(Settings.input.buttonCount == kButtonCount,
+    "buttonCount must match kButtonCount (controls array sizes in ControllerSettings/ExpanderSettings)");
