@@ -2,7 +2,7 @@
 
 > A lightweight 2D game engine for ESP32 — built for tiny screens, big ideas, and people who like soldering things at 2am.
 
-![WolfEngine](IconsPhotosEtc/iconNew.png)
+<img src="IconsPhotosEtc/WolfEngine.png"  width="400" height="400" />
 
 WolfEngine is a from-scratch C++ game engine targeting the ESP32 microcontroller. It ships with a built-in ST7735 TFT driver but is designed around a clean display driver interface — plug in your own driver and it works with any SPI display. It gives you a proper game loop, sprite rendering, palette-based colors, a UI system, camera, and input handling — all in a package that fits on a $5 microcontroller with 520KB of RAM.
 
