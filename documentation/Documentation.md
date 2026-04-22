@@ -42,7 +42,7 @@ Repository structure is in Structure.md for convenience to maintainers. You can 
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
 | Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver` | Lets driver selection be decoupled from the system that uses it |
 | Dirty flag | `WEUIManager`, `BaseUIElement` | Tracks UI changes at manager level; currently does not gate the UI pass |
-| Triangular bitmask | `WEColliderManager` | Tracks per-pair collision state in O(n²/2) bits without a hash map |
+| Triangular bitmask | `WE_CollisionModule` | Tracks per-pair collision state in O(n²/2) bits without a hash map |
 | Placement new | `WEController` for expander objects; `WE_SaveManager` for EEPROM drivers | Avoids heap; driver constructed in a `uint8_t` buffer sized to the largest concrete type |
 | Constexpr validation | `Sprite::Create()`, `WE_SaveManager` slot guards | Illegal values caught at compile time, not runtime |
 
@@ -102,7 +102,7 @@ void StartGame();              // blocking game loop
 9. For each active `GameObject`: `lateComponentTick()`
 10. `ModuleSystem::LateUpdate()`
 11. `Camera::followTick()`
-12. `ColliderManager::tick()` (legacy path, planned to be moved to module flow)
+12. Collision dispatch via `ModuleSystem::LateUpdate()` (handled by `WE_CollisionModule::OnLateUpdate()` when `WE_MODULE_COLLISION` is enabled)
 13. For each active `GameObject`: `preRenderComponentTick()`
 14. `ModuleSystem::PreRender()`
 15. `Renderer::render()` — clear framebuffer + world pass (sort/execute) + UI pass (submit/sort/execute) + full-screen flush
@@ -217,17 +217,21 @@ game-specific logic in `GameObject` subclasses.
 
 ---
 
-### 6.6 ColliderManager
+### 6.6 Collision Module
 
 **Why it exists:** Centralises all collision detection so individual `GameObjects` don't
-need to know about each other.
+need to know about each other, while remaining optional through module flags.
 
 **Public interface:**
 ```cpp
-WEColliderManager& Colliders();   // global accessor (via Engine)
-void registerCollider(ColliderComponent*);
-void unregisterCollider(ColliderComponent*);
-void check();                      // called once per frame by game loop
+class WE_CollisionModule : public TModule<WE_CollisionModule, 0>;
+
+// Called by Collider component constructor/destructor
+void RegisterCollider(Collider*);
+void UnregisterCollider(Collider*);
+
+// Called by ModuleSystem::LateUpdate()
+void OnLateUpdate() override;
 ```
 
 **Key design choices:**
@@ -236,6 +240,7 @@ void check();                      // called once per frame by game loop
 - State machine per pair: Enter fires once, Stay fires every frame while overlapping,
   Exit fires once when separation occurs. Tracked via a triangular packed bitmask.
 - Shape tests: Box–Box (AABB), Circle–Circle (distance²), Box–Circle (clamped point).
+- Entire collision codepath is compile-time optional via `WE_MODULE_COLLISION`.
 
 
 ---
@@ -553,7 +558,7 @@ When you add/remove/reorder fields in a save struct, increment `WE_SAVE_VERSION`
    b. For each active GameObject: lateComponentTick()
    c. ModuleSystem::LateUpdate()
    d. Camera::followTick()
-   e. WEColliderManager::tick() (legacy path)
+   e. Collision already processed in step c by WE_CollisionModule (when enabled)
 
 6. gameTick() End phase:
    a. For each active GameObject: preRenderComponentTick()

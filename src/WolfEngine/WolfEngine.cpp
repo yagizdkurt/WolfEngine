@@ -61,7 +61,6 @@ void WolfEngine::gameTick() {
     for (GameObject* obj : m_GameObjectRegistry.gameObjects) if (obj && obj->isActive) obj->lateComponentTick(); // Late tick for components after main logic
     ModuleSystem::LateUpdate(); // Late update for modules after game logic
     m_Camera.followTick(); // Update camera after game logic so follow targets are at their new position
-    m_ColliderManager.tick(); // Depriciated, will be removed soon.
 
     // ---- End Phase ----
     for (GameObject* obj : m_GameObjectRegistry.gameObjects) if (obj && obj->isActive) obj->preRenderComponentTick(); // PreRender tick for components before rendering

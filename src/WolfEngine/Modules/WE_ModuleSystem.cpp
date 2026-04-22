@@ -8,10 +8,18 @@
 static WE_SaveManager s_saveLoad;
 #endif
 
+#if defined(WE_MODULE_COLLISION)
+#include "CollisionSystem/WE_CollisionModule.hpp"
+static WE_CollisionModule s_collision;
+#endif
+
 // ── Module list ───────────────────────────────────────────────────────────────
 static IModule* s_modules[] = {
 #if defined(WE_MODULE_SAVELOAD)
     &s_saveLoad,
+#endif
+#if defined(WE_MODULE_COLLISION)
+    &s_collision,
 #endif
 };
 

@@ -64,7 +64,7 @@ Inside the running loop, `gameLoop()` runs continuously. Each iteration performs
     - `lateComponentTick()` for active objects
     - `ModuleSystem::LateUpdate()`
     - Camera follow tick
-    - Collider manager tick (legacy path)
+    - Collision handling runs inside `ModuleSystem::LateUpdate()` when `WE_MODULE_COLLISION` is enabled
 4. End phase
     - `preRenderComponentTick()` for active objects
     - `ModuleSystem::PreRender()`
@@ -91,7 +91,6 @@ Because render runs at the end phase, movement/camera logic is completed before 
 | `m_InputManager`     | `InputManager`    | `Input()` |
 | `m_UIManager`        | `UIManager`       | `UI()` |
 | `m_SoundManager`     | `SoundManager`    | `Sound()` |
-| `m_ColliderManager`  | `ColliderManager` | Internal |
 
 ---
 

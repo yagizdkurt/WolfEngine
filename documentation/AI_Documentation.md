@@ -55,7 +55,7 @@ image. There are no processes, no IPC, no network services.
 | Factory method | `GameObject::Create<T>()`, `Collider::Box()`, `Collider::Circle()`, `Sprite::Create()` | Hides construction details; `Create<T>` placement-news into a registry slot |
 | Abstract interface | `WE_Display_Driver`, `WE_IExpander`, `WE_IEEPROMDriver`, `WE_IInputProvider` | Lets driver selection be a compile-time `#if` in settings or a runtime enum dispatch; `IInputProvider` is injected at runtime via `setInputProvider()` |
 | Dirty flag | `WEUIManager`, `BaseUIElement` | Tracks UI changes at manager level; current renderer still runs UI pass every frame |
-| Triangular bitmask | `WEColliderManager` | Tracks per-pair collision state in O(n²/2) bits without a hash map |
+| Triangular bitmask | `WE_CollisionModule` | Tracks per-pair collision state in O(n²/2) bits without a hash map |
 | Placement new | `WEController` for expander objects; `WE_SaveManager` for EEPROM driver objects | Avoids heap; concrete driver constructed into a `uint8_t` buffer sized to the largest concrete type |
 | Constexpr validation | `Sprite::Create()`, `WE_SaveManager` slot guards | Illegal dimensions / slot overflow / count mismatch caught at compile time, not runtime |
 | Null-terminated config array | `WE_SAVE_EEPROMS[]` | EEPROM chip list terminates with `i2cAddr = 0x00`; chip count deduced via `constexpr` lambda |
@@ -175,14 +175,15 @@ virtual void OnTriggerEnter(GameObject*);
 
 ---
 
-### 6.6 ColliderManager
+### 6.6 Collision Module
 
 **Public interface:**
 ```cpp
-WEColliderManager& Colliders();   // global accessor (via Engine)
-void registerCollider(ColliderComponent*);
-void unregisterCollider(ColliderComponent*);
-void check();                      // called once per frame by game loop
+class WE_CollisionModule : public TModule<WE_CollisionModule, 0>;
+
+void RegisterCollider(Collider*);
+void UnregisterCollider(Collider*);
+void OnLateUpdate() override;      // called by ModuleSystem::LateUpdate()
 ```
 
 **Key design choices:**
@@ -191,6 +192,7 @@ void check();                      // called once per frame by game loop
 - State machine per pair: Enter fires once, Stay fires every frame while overlapping,
   Exit fires once when separation occurs. Tracked via a triangular packed bitmask.
 - Shape tests: Box–Box (AABB), Circle–Circle (distance²), Box–Circle (clamped point).
+- Optional compile target via `WE_MODULE_COLLISION`.
 
 
 ---
