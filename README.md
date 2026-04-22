@@ -29,6 +29,7 @@ Built with PlatformIO and ESP-IDF. No Unity. No Godot. Just you, your ESP32, and
 
 ## 🧩 Current Modules
 - 💾 **EEPROM Save/Load module** — Compile-time typed slots and integrity validation.
+- 🎱 **Collision module**  — Collision detection with collider component.
 
 ---
 
