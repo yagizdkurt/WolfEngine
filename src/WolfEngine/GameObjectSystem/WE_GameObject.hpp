@@ -1,11 +1,11 @@
 #pragma once
 #include "stdint.h"
 #include "stdbool.h"
+#include "esp_log.h"
 #include <type_traits>
 #include "WolfEngine/Utilities/WE_Vector2d.hpp"
 #include "WolfEngine/ComponentSystem/Components/WE_Comp_Transform.hpp"
 #include "WolfEngine/ComponentSystem/Components/WE_BaseComp.hpp"
-class Collider;
 
 // =============================================================
 //                  GAMEOBJECT SYSTEM
@@ -204,24 +204,31 @@ public:
     template<typename T> static T* Create() {
         static_assert(std::is_base_of<GameObject, T>::value, "T must be a GameObject");
         T* obj = new T();
-        obj->CreateObject();
+        if (!obj->CreateObject()) {
+            delete obj;
+            ESP_LOGE("WolfEngine", "Create<T>() failed: registry full or CreateObject() error. "
+                     "You can expand the registry in settings, but given that ESP32 has limited RAM "
+                     "we recommend you check your design choices.");
+            abort();
+        }
         return obj;
     }
 
-
+#if defined(WE_MODULE_COLLISION)
     // ---------------------------------------------------------
     //  Collision and Trigger Events (virtual)
     //  Override these in your subclass to respond to collisions
     //  and triggers. These are called by the engine when the
     //  appropriate physics events occur. Do not call these manually.
     // ---------------------------------------------------------
+    class Collider;
     virtual void OnCollisionEnter (Collider* other)  { }
     virtual void OnCollisionStay  (Collider* other)  { }
     virtual void OnCollisionExit  (Collider* other)  { }
     virtual void OnTriggerEnter   (Collider* other)  { }
     virtual void OnTriggerStay    (Collider* other)  { }
     virtual void OnTriggerExit    (Collider* other)  { }
-
+#endif
 
     // ---------------------------------------------------------
     //  registerComponent
@@ -242,15 +249,22 @@ private:
     static constexpr int MAX_COMPONENTS_PER_OBJECT = COMP_MAX_TYPE;
     Component* m_components[MAX_COMPONENTS_PER_OBJECT] = {};
     int        m_componentCount = 0;
-    uint8_t  id = -1;
-    bool     isValid = false;
+    static constexpr uint16_t INVALID_ID = 0xFFFF;
+    uint16_t id = INVALID_ID;
+
     bool     hasStarted = false;
+
+    bool     isValid = false;
+    bool     isDead = false;
+    bool isUpdatable() { return !isDead && isActive; }
+
     void earlyComponentTick();
     void componentTick();
     void lateComponentTick();
     void preRenderComponentTick();
     bool CreateObject();
     void callStart();
+
     friend class WolfEngine;
 
 };

@@ -11,6 +11,7 @@ SpriteRenderer::SpriteRenderer(GameObject* owner, const Sprite* sprite, const ui
 {
     type        = COMP_SPRITE;
     tickEnabled = true;  // base class defaults to false — must be set explicitly
+    owner->registerComponent(this);
 }
 
 void SpriteRenderer::tick() { if constexpr (Settings.render.spriteSystemEnabled) onDraw(); }

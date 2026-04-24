@@ -20,6 +20,8 @@ struct Component {
     friend class GameObject;
 
     private:
+    virtual void onReferenceCollection() { }
+    virtual void onStart() { }
     virtual void earlyTick() { }
     virtual void tick() { }
     virtual void lateTick() { }

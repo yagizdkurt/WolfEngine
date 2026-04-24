@@ -8,6 +8,10 @@ bool GameObject::CreateObject() {
         if (reg.gameObjects[i] == nullptr) {
             reg.gameObjects[i] = this;
             reg.count++;
+            id = i;
+            if (Engine().IsRunning()) {
+                reg.pendingStart[reg.pendingStartCount++] = this;
+            }
             return true;
         }
     }
@@ -18,17 +22,23 @@ GameObject::GameObject() {}
 GameObject::~GameObject() {}
 
 void GameObject::DestroyGameObject(GameObject *gameObject) {
+    if (gameObject == nullptr) return;
     GameObjectRegistry& reg = Engine().m_GameObjectRegistry;
-    if (reg.gameObjects[gameObject->id] == gameObject) { // if its in the registry, free it and remove it from the registry
-        reg.gameObjects[gameObject->id] = nullptr;
-        reg.count--;
-    }
-    delete gameObject;
+    if (gameObject->id >= Settings.limits.maxGameObjects) return;
+    if (reg.gameObjects[gameObject->id] != gameObject) return;
+    gameObject->isDead = true;
+    reg.gameObjects[gameObject->id] = nullptr;
+    reg.count--;
+    reg.pendingDestroy[reg.pendingDestroyCount++] = gameObject;
 }
 
 
 void GameObject::callStart() {
     if (!hasStarted) {
+        for (int i = 0; i < m_componentCount; i++) if (m_components[i]) {
+            m_components[i]->onReferenceCollection();
+            m_components[i]->onStart();
+        }
         Start();
         hasStarted = true;
     }

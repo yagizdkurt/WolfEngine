@@ -8,5 +8,9 @@
 
 typedef struct {
     GameObject* gameObjects[Settings.limits.maxGameObjects];
-    uint8_t count;
+    uint16_t    count;
+    GameObject* pendingStart[Settings.limits.maxGameObjects];
+    uint16_t    pendingStartCount;
+    GameObject* pendingDestroy[Settings.limits.maxGameObjects];
+    uint16_t    pendingDestroyCount;
 } GameObjectRegistry;

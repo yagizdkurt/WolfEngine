@@ -43,7 +43,7 @@ inline constexpr EngineConfig Settings = {
     // ── Renderer ─────────────────────────────────────────────────────────────
     .render = {
         // Rectangular area of the screen used for game rendering. { x1, y1, x2, y2 }
-        .gameRegion              = { 0, 0, 128, 108 },
+        .gameRegion              = { 0, 0, 128, 160 },
         // Maximum DrawCommands that can be submitted per frame. Tune based on peak sprite count.
         .maxDrawCommands         = 128,
         // Background color in RGB565 format. 0x0000 = Black, 0xFFFF = White.
@@ -146,8 +146,8 @@ inline constexpr EngineConfig Settings = {
 };
 
 // ── Validation ───────────────────────────────────────────────────────────────
-static_assert(Settings.limits.maxGameObjects > 0 && Settings.limits.maxGameObjects <= 255,
-    "maxGameObjects must be between 1 and 255 — live counter in WE_GORegistry is uint8_t");
+static_assert(Settings.limits.maxGameObjects > 0 && Settings.limits.maxGameObjects <= 65535,
+    "maxGameObjects must be between 1 and 65535 — live counter in WE_GORegistry is uint16_t");
 static_assert(Settings.limits.maxPanelChildren > 0 && Settings.limits.maxPanelChildren <= 255,
     "maxPanelChildren must be between 1 and 255 — iterator in UIPanel is uint8_t");
 static_assert(Settings.render.maxDrawCommands  > 0,  "maxDrawCommands must be > 0");
