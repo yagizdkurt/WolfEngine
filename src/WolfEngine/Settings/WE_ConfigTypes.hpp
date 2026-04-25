@@ -80,6 +80,8 @@ struct HardwareConfig {
 };
 
 struct RenderConfig {
+    uint16_t      screenWidth;
+    uint16_t      screenHeight;
     Region        gameRegion;
     uint16_t      maxDrawCommands;
     uint16_t      defaultBackgroundPixel;

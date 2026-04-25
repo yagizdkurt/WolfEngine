@@ -45,15 +45,15 @@ static_assert(Settings.render.gameRegion.x1 >= 0, "Settings.render.gameRegion.x1
 static_assert(Settings.render.gameRegion.y1 >= 0, "Settings.render.gameRegion.y1 must be >= 0");
 static_assert(Settings.render.gameRegion.x1 < Settings.render.gameRegion.x2, "Settings.render.gameRegion must satisfy x1 < x2");
 static_assert(Settings.render.gameRegion.y1 < Settings.render.gameRegion.y2, "Settings.render.gameRegion must satisfy y1 < y2");
-static_assert(Settings.render.gameRegion.x2 <= RENDER_SCREEN_WIDTH, "Settings.render.gameRegion.x2 must be <= RENDER_SCREEN_WIDTH");
-static_assert(Settings.render.gameRegion.y2 <= RENDER_SCREEN_HEIGHT, "Settings.render.gameRegion.y2 must be <= RENDER_SCREEN_HEIGHT");
+static_assert(Settings.render.gameRegion.x2 <= Settings.render.screenWidth, "Settings.render.gameRegion.x2 must be <= Settings.render.screenWidth");
+static_assert(Settings.render.gameRegion.y2 <= Settings.render.screenHeight, "Settings.render.gameRegion.y2 must be <= Settings.render.screenHeight");
 
 
 class Renderer {
 public:
     uint16_t* getCanvas() { return m_framebuffer; }
-    static constexpr int SCREEN_WIDTH  = RENDER_SCREEN_WIDTH;
-    static constexpr int SCREEN_HEIGHT = RENDER_SCREEN_HEIGHT;
+    static constexpr int SCREEN_WIDTH  = Settings.render.screenWidth;
+    static constexpr int SCREEN_HEIGHT = Settings.render.screenHeight;
 
     bool submitDrawCommand(const DrawCommand& cmd);
     const FrameDiagnostics& getDiagnostics() const { return m_diagnostics; }
@@ -78,7 +78,7 @@ private:
     void drawTextRunInternal(int16_t x, int16_t y, const char* text, uint16_t color, uint8_t maxWidth);
 
     DisplayDriver* m_driver;
-    uint16_t m_framebuffer[RENDER_SCREEN_WIDTH * RENDER_SCREEN_HEIGHT];
+    uint16_t m_framebuffer[Settings.render.screenWidth * Settings.render.screenHeight];
 
     DrawCommand      m_commandBuffer[Settings.render.maxDrawCommands];
     uint16_t         m_commandCount = 0;
