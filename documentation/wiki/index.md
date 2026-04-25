@@ -17,9 +17,9 @@ Welcome to the WolfEngine documentation. Use the sections below to navigate the 
 - [Input](core-systems/input.md)
 - [Audio](core-systems/audio.md)
 - [Time and Timer](core-systems/time-and-timer.md)
-- [UI Manager](core-systems/ui-manager.md)
-- [UI Panel](core-systems/uipanel.md)
-- [UI Label](core-systems/uilabel.md)
+- [UI Manager](ui-system/ui-manager.md)
+- [UI Panel](ui-system/uipanel.md)
+- [UI Label](ui-system/uilabel.md)
 - [Camera](core-systems/camera.md)
 
 ---
@@ -35,10 +35,10 @@ Welcome to the WolfEngine documentation. Use the sections below to navigate the 
 
 ## Engine Configuration
 
-- [General Settings](settings.md)
-- [Input Settings](input.md)
-- [Pin Definitions](pin-definitions.md)
-- [Render Layers](render-layers.md)
+- [General Settings](engine-settings/settings.md)
+- [Input Settings](engine-settings/input.md)
+- [Pin Definitions](engine-settings/pin-definitions.md)
+- [Render Layers](engine-settings/render-layers.md)
 
 ---
 
