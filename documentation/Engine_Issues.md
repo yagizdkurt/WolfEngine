@@ -46,7 +46,8 @@ section added. Do not delete entries from this file — strike-through is not su
 
 ---
 
-Panel Children Anchor Assumption
+## Panel Children Anchor Assumption
+
 Status: Active
 Severity: Medium
 Location: UIPanel.cpp — draw() offset pass-through; WE_BaseUIElement.hpp — resolveRect()
