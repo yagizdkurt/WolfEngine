@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <stdint.h>
 #include "WolfEngine/Graphics/UserInterface/UIElements/WE_UIElements.hpp"
-#include "WolfEngine/Graphics/UserInterface/WE_UIElementRef.hpp"
+#include "WolfEngine/Graphics/UserInterface/UIElements/Base/WE_UIElementRef.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_RenderCore.hpp"
 
 // =============================================================

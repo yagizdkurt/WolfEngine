@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <stdint.h>
 #include "Base/WE_BaseUIElement.hpp"
-#include "WolfEngine/Graphics/UserInterface/WE_UIElementRef.hpp"
+#include "WolfEngine/Graphics/UserInterface/UIElements/Base/WE_UIElementRef.hpp"
 
 // =============================================================
 //  UIPanel
