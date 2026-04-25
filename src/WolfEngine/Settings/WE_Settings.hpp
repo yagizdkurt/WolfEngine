@@ -42,7 +42,8 @@ inline constexpr EngineConfig Settings = {
 
     // ── Renderer ─────────────────────────────────────────────────────────────
     .render = {
-        // Rectangular area of the screen used for game rendering. { x1, y1, x2, y2 }
+        // Rectangular game render area in half-open bounds: [x1, x2), [y1, y2).
+        // This is compile-time validated against framebuffer dimensions in WE_RenderCore.hpp.
         .gameRegion              = { 0, 0, 128, 160 },
         // Maximum DrawCommands that can be submitted per frame. Tune based on peak sprite count.
         .maxDrawCommands         = 128,

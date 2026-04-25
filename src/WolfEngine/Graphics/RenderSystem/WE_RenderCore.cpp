@@ -80,7 +80,8 @@ void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
             int drawX = x + px;
             int drawY = y + py;
 
-            // Per-pixel bounds check — clip to game region
+            // Per-pixel bounds check: clip to gameRegion.
+            // gameRegion/framebuffer compatibility is compile-time validated in WE_RenderCore.hpp.
             if (drawX < Settings.render.gameRegion.x1 || drawX >= Settings.render.gameRegion.x2) continue;
             if (drawY < Settings.render.gameRegion.y1 || drawY >= Settings.render.gameRegion.y2) continue;
 
