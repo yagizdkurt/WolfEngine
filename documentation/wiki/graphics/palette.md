@@ -42,6 +42,8 @@ Include all built-in palettes with a single line:
 #include "WolfEngine/Graphics/ColorPalettes/WE_Palettes.hpp"
 ```
 
+The asset pipeline also consumes these palette names through `tools/palettes/*.toml` files, where each file's `meta.name` value becomes the palette reference you can place in `Images/assets.toml`.
+
 ---
 
 ## Color Enums
@@ -136,6 +138,8 @@ uint16_t rgb565 = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
 ## Creating a Custom Palette
 
 Create a `.hpp` file anywhere in your project and define a `constexpr uint16_t` array of exactly 32 entries. Index 0 must always be `0x0000`.
+
+For generated sprites, the preferred path is to define the palette in `tools/palettes/` and reference it from `Images/assets.toml`, so the asset converter can emit the sprite with the correct palette name automatically.
 
 ```cpp
 #pragma once
