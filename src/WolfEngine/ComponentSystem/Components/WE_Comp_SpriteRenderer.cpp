@@ -3,6 +3,8 @@
 #include "WolfEngine/GameObjectSystem/WE_GameObject.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
 #include "WolfEngine/WolfEngine.hpp"
+#include "esp_log.h"
+#include <cassert>
 
 SpriteRenderer::SpriteRenderer(GameObject* owner, const Sprite* sprite, RenderLayer layer)
     : m_owner   (owner)
@@ -30,7 +32,7 @@ void SpriteRenderer::clearPaletteOverride() {
     m_paletteOverrideTimer.stop();
 }
 
-void SpriteRenderer::PaletteOverride(float seconds, const uint16_t* palette) {
+void SpriteRenderer::setPaletteOverrideForSeconds(float seconds, const uint16_t* palette) {
     if (palette == nullptr || seconds <= 0.0f) {
         clearPaletteOverride();
         return;
@@ -41,8 +43,8 @@ void SpriteRenderer::PaletteOverride(float seconds, const uint16_t* palette) {
     m_paletteOverrideTimer.start();
 }
 
-void SpriteRenderer::PaletteOverrideTick(uint32_t tickCount, const uint16_t* palette) {
-    PaletteOverride(static_cast<float>(tickCount) * WETime::DELTA_TIME, palette);
+void SpriteRenderer::setPaletteOverrideForTicks(uint32_t tickCount, const uint16_t* palette) {
+    setPaletteOverrideForSeconds(static_cast<float>(tickCount) * WETime::DELTA_TIME, palette);
 }
 
 void SpriteRenderer::preRenderTick() {
@@ -55,6 +57,17 @@ void SpriteRenderer::preRenderTick() {
 
 void SpriteRenderer::onDraw() {
     if (!m_visible || !m_sprite) return;
+
+    const uint8_t* pixels = m_sprite->pixels;
+    const uint16_t* selectedPalette = m_usePaletteOverride ? m_paletteOverride : m_sprite->palette;
+
+    if (pixels == nullptr || selectedPalette == nullptr) { // Validitiy check: sprite data must not be null
+        ESP_LOGE("SpriteRenderer: ","Invalid sprite pointers (sprite=%p pixels=%p palette=%p override=%d)",
+        static_cast<const void*>(m_sprite), static_cast<const void*>(pixels),
+        static_cast<const void*>(selectedPalette), m_usePaletteOverride ? 1 : 0);
+        assert(false && "SpriteRenderer: pixels/palette pointer must not be null");
+        return;
+    }
 
     const int W  = m_sprite->width;
     const int H  = m_sprite->height;
@@ -107,8 +120,8 @@ void SpriteRenderer::onDraw() {
                           ? WE_Math::clampToByte(m_sortKeyOverride)
                           : WE_Math::clampToByte(topY);
     cmd.sortKey       = cmdMakeSortKey(static_cast<RenderLayer>(m_layer), sortByte);
-    cmd.sprite.pixels  = m_sprite->pixels;
-    cmd.sprite.palette = m_usePaletteOverride ? m_paletteOverride : m_sprite->palette;
+    cmd.sprite.pixels  = pixels;
+    cmd.sprite.palette = selectedPalette;
     cmd.sprite.width   = static_cast<uint8_t>(W);
     cmd.sprite.height  = static_cast<uint8_t>(H);
 

@@ -75,14 +75,14 @@ public:
      * @param seconds Override duration in seconds.
      * @param palette Pointer to the override palette.
      */
-    void PaletteOverride(float seconds, const uint16_t* palette);
+    void setPaletteOverrideForSeconds(float seconds, const uint16_t* palette);
 
     /**
      * @brief Apply a timed palette override using engine ticks.
      * @param tickCount Duration expressed in engine ticks.
      * @param palette Pointer to the override palette.
      */
-    void PaletteOverrideTick(uint32_t tickCount, const uint16_t* palette);
+    void setPaletteOverrideForTicks(uint32_t tickCount, const uint16_t* palette);
 
     /**
      * @brief Set sprite rotation in 90-degree steps.
