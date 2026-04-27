@@ -46,9 +46,6 @@ inline constexpr EngineConfig Settings = {
     .render = {
         .screenWidth             = RENDER_SCREEN_WIDTH,
         .screenHeight            = RENDER_SCREEN_HEIGHT,
-        // Rectangular game render area in half-open bounds: [x1, x2), [y1, y2).
-        // This is compile-time validated against framebuffer dimensions in WE_RenderCore.hpp.
-        .gameRegion              = { 0, 0, RENDER_SCREEN_WIDTH - 0, RENDER_SCREEN_HEIGHT - 0 },
         // Maximum DrawCommands that can be submitted per frame. Tune based on peak sprite count.
         .maxDrawCommands         = 128,
         // Background color in RGB565 format. 0x0000 = Black, 0xFFFF = White.

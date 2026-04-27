@@ -61,22 +61,22 @@ void Camera::followTick() {
 
 Vec2 Camera::worldToScreen(Vec2 world_pos) const {
     return {
-        (world_pos.x - m_position.x) * m_zoom + Settings.render.gameRegion.centerX(),
-        (world_pos.y - m_position.y) * m_zoom + Settings.render.gameRegion.centerY()
+        (world_pos.x - m_position.x) * m_zoom + Settings.render.screenWidth  / 2,
+        (world_pos.y - m_position.y) * m_zoom + Settings.render.screenHeight / 2
     };
 }
 
 Vec2 Camera::screenToWorld(Vec2 screen_pos) const {
     return {
-        (screen_pos.x - Settings.render.gameRegion.centerX()) / m_zoom + m_position.x,
-        (screen_pos.y - Settings.render.gameRegion.centerY()) / m_zoom + m_position.y
+        (screen_pos.x - Settings.render.screenWidth  / 2) / m_zoom + m_position.x,
+        (screen_pos.y - Settings.render.screenHeight / 2) / m_zoom + m_position.y
     };
 }
 
 bool Camera::isVisible(Vec2 world_pos, float margin) const {
     Vec2 screen = worldToScreen(world_pos);
-    return screen.x >= Settings.render.gameRegion.x1 - margin && screen.x <= Settings.render.gameRegion.x2 + margin &&
-           screen.y >= Settings.render.gameRegion.y1 - margin && screen.y <= Settings.render.gameRegion.y2 + margin;
+    return screen.x >= -margin && screen.x <= Settings.render.screenWidth  + margin &&
+           screen.y >= -margin && screen.y <= Settings.render.screenHeight + margin;
 }
 
 // ------------------------------------------------------------------ //

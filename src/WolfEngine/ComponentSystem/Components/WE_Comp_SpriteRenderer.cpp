@@ -103,13 +103,6 @@ void SpriteRenderer::onDraw() {
     const int outW = (m_rotation == Rotation::R90 || m_rotation == Rotation::R270) ? H : W;
     const int outH = (m_rotation == Rotation::R90 || m_rotation == Rotation::R270) ? W : H;
 
-    // Coarse cull — skip if entirely outside the game region
-    if (topX + outW <= Settings.render.gameRegion.x1 ||
-        topX        >= Settings.render.gameRegion.x2 ||
-        topY + outH <= Settings.render.gameRegion.y1 ||
-        topY        >= Settings.render.gameRegion.y2)
-        return;
-
     DrawCommand cmd;
     cmd.type          = DrawCommandType::Sprite;
     cmd.x             = topX;

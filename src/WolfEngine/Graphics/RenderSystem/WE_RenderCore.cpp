@@ -51,8 +51,7 @@ bool Renderer::submitDrawCommand(const DrawCommand& cmd) {
 // -------------------------------------------------------------
 //  drawSpriteInternal
 //  Writes a single sprite into the framebuffer given unpacked
-//  command fields. Handles rotation index math, transparency,
-//  and per-pixel bounds checking against the game region.
+//  command fields. Handles rotation index math and transparency.
 // -------------------------------------------------------------
 void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
     const uint8_t*  pixels, const uint16_t* palette, int width, int height, Rotation rotation)
@@ -90,11 +89,6 @@ void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
             int drawX = x + px;
             int drawY = y + py;
 
-            // Per-pixel bounds check: clip to gameRegion.
-            // gameRegion/framebuffer compatibility is compile-time validated in WE_RenderCore.hpp.
-            if (drawX < Settings.render.gameRegion.x1 || drawX >= Settings.render.gameRegion.x2) continue;
-            if (drawY < Settings.render.gameRegion.y1 || drawY >= Settings.render.gameRegion.y2) continue;
-
             // Palette lookup (array bounds checked by resolver returns 0x0000 transparent if out of bounds)
             uint16_t color = ResolvePaletteColor(palette, paletteIndex);
             if (color == 0x0000) continue;
@@ -111,7 +105,7 @@ void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
 // -------------------------------------------------------------
 //  drawFillRectInternal
 //  Fills a solid rectangle into the framebuffer.
-//  Clips to screen bounds; no gameRegion restriction.
+//  Clips to screen bounds.
 // -------------------------------------------------------------
 void Renderer::drawFillRectInternal(int16_t x, int16_t y, uint8_t w, uint8_t h, uint16_t color) {
     if (m_driver->requiresByteSwap) color = (color >> 8) | (color << 8);

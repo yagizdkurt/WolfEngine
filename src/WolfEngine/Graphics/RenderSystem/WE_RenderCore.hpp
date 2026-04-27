@@ -39,16 +39,6 @@
     #include "Display_SDL.h"
 #endif
 
-// gameRegion is a compile-time invariant for sprite safety:
-// it must be a valid half-open rectangle fully contained in the framebuffer.
-static_assert(Settings.render.gameRegion.x1 >= 0, "Settings.render.gameRegion.x1 must be >= 0");
-static_assert(Settings.render.gameRegion.y1 >= 0, "Settings.render.gameRegion.y1 must be >= 0");
-static_assert(Settings.render.gameRegion.x1 < Settings.render.gameRegion.x2, "Settings.render.gameRegion must satisfy x1 < x2");
-static_assert(Settings.render.gameRegion.y1 < Settings.render.gameRegion.y2, "Settings.render.gameRegion must satisfy y1 < y2");
-static_assert(Settings.render.gameRegion.x2 <= Settings.render.screenWidth, "Settings.render.gameRegion.x2 must be <= Settings.render.screenWidth");
-static_assert(Settings.render.gameRegion.y2 <= Settings.render.screenHeight, "Settings.render.gameRegion.y2 must be <= Settings.render.screenHeight");
-
-
 class Renderer {
 public:
     uint16_t* getCanvas() { return m_framebuffer; }
