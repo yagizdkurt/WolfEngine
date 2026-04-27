@@ -19,6 +19,12 @@
 #define WE_MODULE_SAVELOAD
 //#define WE_MODULE_COLLISION
 
+// ── Radio ────────────────────────────────────────────────────────────────────
+// Set to 1 only if your project explicitly requires WiFi or Bluetooth.
+// When 0, radio components are excluded at the CMake level.
+// NOTE: NOT IMPLEMENTED YET - reserved for future use when radio features are added.
+#define WE_RADIO_ENABLED 0
+
 /*
 ============================================================================================
  WOLF ENGINE SETTINGS
