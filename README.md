@@ -12,6 +12,7 @@ Built with PlatformIO and ESP-IDF. No Unity. No Godot. Just you, your ESP32, and
 
 ## ✨ What It Can Do
 
+- 🧱 Zero-touch asset pipeline — Drop PNGs into the project and build; sprites are auto-converted into `constexpr` data with optional palette control. No manual C++ asset coding required.
 - 🖥️ **Faster creative iteration (SDL3)** — Test and tune gameplay on desktop before deploying to hardware.
 - 🎮 **Optimized for embedded systems** — Boots fast, updates smoothly, and feels responsive.
 - 🎮 **GameObject + Component architecture** — Component-based objects with a clean `Start()` / `Update()` lifecycle.
