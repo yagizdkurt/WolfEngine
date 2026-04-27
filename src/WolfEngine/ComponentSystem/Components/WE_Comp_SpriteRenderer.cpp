@@ -11,7 +11,7 @@ SpriteRenderer::SpriteRenderer(GameObject* owner, const Sprite* sprite, RenderLa
     , m_layer   (static_cast<uint8_t>(layer))
 {
     type        = COMP_SPRITE;
-    tickEnabled = true;  // base class defaults to false — must be set explicitly
+    preRenderTickEnabled = true;  // base class defaults to false — must be set explicitly
     owner->registerComponent(this);
 }
 
