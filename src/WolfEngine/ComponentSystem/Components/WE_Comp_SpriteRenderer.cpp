@@ -1,5 +1,5 @@
 #include "WE_Comp_SpriteRenderer.hpp"
-#include "WolfEngine/Utils/WE_MathUtils.h"
+#include "WolfEngine/Utilities/WE_MathUtilities.hpp"
 #include "WolfEngine/GameObjectSystem/WE_GameObject.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
 #include "WolfEngine/Utilities/WE_Debug.hpp"
