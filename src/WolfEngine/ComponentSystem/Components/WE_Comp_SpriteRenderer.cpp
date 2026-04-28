@@ -2,7 +2,7 @@
 #include "WolfEngine/Utilities/WE_MathUtilities.hpp"
 #include "WolfEngine/GameObjectSystem/WE_GameObject.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include "WolfEngine/WolfEngine.hpp"
 
 SpriteRenderer::SpriteRenderer(GameObject* owner, const Sprite* sprite, RenderLayer layer)
@@ -98,17 +98,6 @@ void SpriteRenderer::onDraw() {
             topY = screenY - AX;
             break;
     }
-
-    // Output dimensions swap at 90°/270°
-    const int outW = (m_rotation == Rotation::R90 || m_rotation == Rotation::R270) ? H : W;
-    const int outH = (m_rotation == Rotation::R90 || m_rotation == Rotation::R270) ? W : H;
-
-    // Coarse cull — skip if entirely outside the game region
-    if (topX + outW <= Settings.render.gameRegion.x1 ||
-        topX        >= Settings.render.gameRegion.x2 ||
-        topY + outH <= Settings.render.gameRegion.y1 ||
-        topY        >= Settings.render.gameRegion.y2)
-        return;
 
     DrawCommand cmd;
     cmd.type          = DrawCommandType::Sprite;

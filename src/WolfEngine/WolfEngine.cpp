@@ -1,6 +1,13 @@
 #include "WolfEngine.hpp"
 #include "esp_timer.h"
 #include "WolfEngine/Utilities/WE_I2C.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
+
+void WolfEngine::Shutdown() {
+#if WE_DUAL_CORE_RENDER
+    m_renderer.renderShutDown();
+#endif
+}
 
 void WolfEngine::StartEngine() {
     // Driver initialization
@@ -27,6 +34,9 @@ void WolfEngine::StartGame() {
 
     // Main game loop
     while (IsRunning()) gameLoop();
+
+    // Shutdown sequence
+    Shutdown();
 }
 
 void WolfEngine::gameLoop() {
@@ -44,6 +54,8 @@ void WolfEngine::gameLoop() {
 
 // Main Game Loop Tick - called every frame
 void WolfEngine::gameTick() {
+    auto tickStart = WE_DiagBegin();
+
     // ---- Pending Start Drain ----
     for (uint16_t i = 0; i < m_GameObjectRegistry.pendingStartCount; i++)
         if (m_GameObjectRegistry.pendingStart[i])
@@ -70,7 +82,34 @@ void WolfEngine::gameTick() {
     // ---- End Phase ----
     for (GameObject* obj : m_GameObjectRegistry.gameObjects) if (obj && obj->isUpdatable()) obj->preRenderComponentTick(); // PreRender tick for components before rendering
     ModuleSystem::PreRender(); // PreRender for modules before rendering
+
+    auto renderStart = WE_DiagBegin();
+    m_engineDiag.updatePhaseUs = WE_DiagElapsedUs(tickStart);
+
     m_renderer.render(); // Render the scene
+
+    m_engineDiag.renderPhaseUs = WE_DiagElapsedUs(renderStart);
+    m_engineDiag.frameTotalUs  = WE_DiagElapsedUs(tickStart);
+
+    uint32_t fpsElapsed = static_cast<uint32_t>(
+        esp_timer_get_time() - m_fpsWindowStart);
+    m_fpsFrameCount++;
+    if (fpsElapsed >= 1000000u) {
+        m_engineDiag.fpsAvg1s = static_cast<uint16_t>(
+            (m_fpsFrameCount * 1000000u) / fpsElapsed);
+        m_fpsFrameCount  = 0;
+        m_fpsWindowStart = esp_timer_get_time();
+    }
+
+    if (++m_diagFrameCount >= WE_DIAG_LOG_INTERVAL_FRAMES) {
+        WE_LOGI("DIAG", "frame=%luus update=%luus render=%luus fps=%u",
+            m_engineDiag.frameTotalUs,
+            m_engineDiag.updatePhaseUs,
+            m_engineDiag.renderPhaseUs,
+            m_engineDiag.fpsAvg1s);
+        m_diagFrameCount = 0;
+    }
+
     WETime::incrementFrameCount(); // Increment frame count at the end of the tick so it reflects completed frames
 
     // ---- Destroy Drain ----

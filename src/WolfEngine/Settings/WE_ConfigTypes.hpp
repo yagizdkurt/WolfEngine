@@ -31,17 +31,6 @@ enum class CollisionLayer : uint16_t {
 };
 
 // =============================================================
-//  Region — rectangular screen area with helpers
-// =============================================================
-struct Region {
-    int x1, y1, x2, y2;
-    constexpr int width()   const { return x2 - x1; }
-    constexpr int height()  const { return y2 - y1; }
-    constexpr int centerX() const { return (x1 + x2) / 2; }
-    constexpr int centerY() const { return (y1 + y2) / 2; }
-};
-
-// =============================================================
 //  Display target selector
 // =============================================================
 enum class DisplayTarget : uint8_t { ST7735, SDL };
@@ -82,13 +71,18 @@ struct HardwareConfig {
 struct RenderConfig {
     uint16_t      screenWidth;
     uint16_t      screenHeight;
-    Region        gameRegion;
     uint16_t      maxDrawCommands;
     uint16_t      defaultBackgroundPixel;
     bool          spriteSystemEnabled;
     bool          cleanFramebufferEachFrame;
     uint32_t      targetFrameTimeUs;
     DisplayTarget displayTarget;
+};
+
+struct DisplayTargetConfig {
+    uint16_t screenWidth;
+    uint16_t screenHeight;
+    DisplayTarget target;
 };
 
 struct InputConfig {

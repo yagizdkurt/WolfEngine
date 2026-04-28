@@ -7,6 +7,7 @@
 // =============== ENGINE INCLUDES ================
 // ======= Settings ==========
 #include "WolfEngine/Settings/WE_Settings.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Diagnostics.hpp"
 
 // ======= Registries ========
 #include "WolfEngine/GameObjectSystem/WE_GORegistry.hpp"
@@ -52,6 +53,8 @@ public:
      * @brief Returns true while the game loop is running. Safe to call from any thread.
      */
     bool IsRunning() { return m_isRunning.load(std::memory_order_relaxed); }
+
+    const EngineDiagnostics& getDiagnostics() const { return m_engineDiag; }
     
     Renderer m_renderer;
     Camera m_Camera;
@@ -63,6 +66,11 @@ private:
     std::atomic<bool> m_isRunning{false};
     GameObjectRegistry m_GameObjectRegistry = {};
     int64_t lastFrameTime = 0;
+
+    EngineDiagnostics m_engineDiag     = {};
+    uint32_t          m_diagFrameCount = 0;
+    uint32_t          m_fpsFrameCount  = 0;
+    uint64_t          m_fpsWindowStart = 0;
     
     WolfEngine() :
     m_renderer(GetDriver()),
@@ -73,6 +81,7 @@ private:
 
     void gameLoop();
     void gameTick();
+    void Shutdown();
 
     friend class GameObject;
 };

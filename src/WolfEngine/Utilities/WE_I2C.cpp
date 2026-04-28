@@ -1,4 +1,4 @@
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include "WE_I2C.hpp"
 // ─────────────────────────────────────────────────────────────
 // ── Lifecycle ──────────────────────────────────────────────

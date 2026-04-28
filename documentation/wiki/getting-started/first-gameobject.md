@@ -74,9 +74,9 @@ void Update() override {
 ---
 
 ## Adding a Sprite
-First define pixel data and create a `Sprite` asset in flash, then attach a `SpriteRenderer` component.
+First define pixel data and create a `Sprite` asset in flash, then attach a `SpriteRenderer` component. If you are using the asset pipeline, you can skip the manual pixel array and include the generated `GeneratedAssets/WE_Assets.hpp` header instead.
 
-Sprite pixel arrays use `[H][W]` shape (rows × columns). `W` and `H` can be different, and each must be in `1..63`.
+Sprite pixel arrays use `[H][W]` shape (rows × columns). `W` and `H` can be different, and each must be in `1..96`.
 
 Pixel data must be declared as a separate `constexpr` array — inline initializer lists are not supported.
 
@@ -114,7 +114,7 @@ public:
 
 The sprite anchor draws at `transform.position` every frame automatically. By default this anchor is centered (`W/2`, `H/2`).
 
-`0` in pixel data is always transparent. Indices `1`–`31` map to palette colors.
+`0` in pixel data is always transparent. Indices `1`–`31` map to palette colors. Generated sprites follow the same rule, so the `Assets` namespace produced by the converter is drop-in compatible with manual `Sprite::Create()` usage.
 
 > **Tip:** Refer to [Sprite Renderer](../gameobjects-and-components/sprite-renderer.md) to better understand how sprites work.
 

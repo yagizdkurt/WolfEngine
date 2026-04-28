@@ -1,14 +1,16 @@
 # Generated Assets
 
 This folder is reserved for auto-generated asset headers used by WolfEngine.
-Files here are produced by tools or asset pipelines and should not be edited by
+Files here are produced by `tools/asset_converter.py` from PNGs in `Images/`
+and palette definitions in `tools/palettes/`, and should not be edited by
 hand unless you are intentionally changing the generator output.
 
 ## Current Purpose
 
 The main generated header in this folder is `WE_Assets.hpp`. It exists as a
 central include point for generated game data such as sprites, palettes, and
-other compile-time assets.
+other compile-time assets. The converter also emits one `.cpp` per image, and
+each symbol is exposed through the `Assets` namespace.
 
 ## How To Use Generated Assets
 

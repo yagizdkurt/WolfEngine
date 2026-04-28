@@ -1,4 +1,4 @@
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 
 #if WE_DEBUG_ENABLED && defined(WE_DEBUG_BACKEND_ESP)
 

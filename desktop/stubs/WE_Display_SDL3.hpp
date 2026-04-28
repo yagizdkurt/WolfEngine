@@ -2,6 +2,11 @@
 // Phase 2 SDL3 DisplayDriver implementation.
 // initialize() creates the streaming texture.
 // flush() uploads the full 128x160 framebuffer and presents it scaled to the window.
+//
+// NOTE: WE_DUAL_CORE_RENDER is always 0 on desktop builds (ESP_PLATFORM
+// is absent). flush() is called synchronously from Core 1 as today.
+// SDL_LockTexture/SDL_RenderPresent are not thread-safe and must not be
+// called from a background task. No dual-core path exists here.
 
 #include "WolfEngine/Drivers/DisplayDrivers/WE_Display_Driver.hpp"
 #include <SDL3/SDL.h>

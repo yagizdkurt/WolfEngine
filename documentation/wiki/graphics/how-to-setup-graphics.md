@@ -1,6 +1,6 @@
 # How To Setup Graphics
 
-This page walks through everything you need to get graphics on screen — from defining pixel data to rendering a moving object with a palette.
+This page walks through everything you need to get graphics on screen — from defining pixel data to rendering a moving object with a palette. If your sprites come from PNG artwork, the preferred workflow is the asset pipeline: drop images into `Images/`, optionally set a palette in `Images/assets.toml`, build, and include the generated `GeneratedAssets/WE_Assets.hpp` header.
 
 ---
 
@@ -45,7 +45,7 @@ PL_GS_
 
 ## Step 2 — Define Pixel Data
 
-Create a `constexpr uint8_t` 2D array as `[H][W]` (rows × columns). Each value is a palette index (0–31). Index 0 is always transparent. `W` and `H` can be different; each must be in `1..63`.
+If you are authoring sprites by hand, create a `constexpr uint8_t` 2D array as `[H][W]` (rows × columns). Each value is a palette index (0–31). Index 0 is always transparent. `W` and `H` can be different; each must be in `1..96`.
 
 ```cpp
 // 0 = transparent, 1 = dark, 2 = mid, 3 = light
@@ -62,6 +62,8 @@ constexpr uint8_t PlayerPixels[8][8] = {
 
 constexpr Sprite SPRITE_PLAYER = Sprite::Create(PlayerPixels, PALETTE_GRAYSCALE);
 ```
+
+If you are using generated assets, the converter emits the same kind of `Sprite` constant for you and names it through the `Assets` namespace.
 
 > ✅ Keep pixel data in a separate header like `MyObject_Sprites.hpp` to keep your GameObject class clean.
 

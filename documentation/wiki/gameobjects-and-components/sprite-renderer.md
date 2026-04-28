@@ -1,14 +1,14 @@
 # Sprite Renderer
 
-`SpriteRenderer` is the component that makes a [GameObject](gameobject.md) visible on screen. It is split into two parts - a `Sprite` asset that holds pixel data in flash, and the `SpriteRenderer` component that submits draw commands to the renderer.
+`SpriteRenderer` is the component that makes a [GameObject](gameobject.md) visible on screen. It is split into two parts - a `Sprite` asset that holds pixel data in flash, and the `SpriteRenderer` component that submits draw commands to the renderer. Most project sprites now come from the asset pipeline as generated `Assets::NAME` constants in `GeneratedAssets/WE_Assets.hpp`, but the manual API is the same either way.
 
 ---
 
 ## Step 1 — Define Pixel Data
 
-Create a `constexpr uint8_t` array in flash. This can live anywhere — inline in your class, in a dedicated sprites header, wherever makes sense for your project.
+Create a `constexpr uint8_t` array in flash. This can live anywhere — inline in your class, in a dedicated sprites header, or in generated code from the asset pipeline.
 
-**Valid sizes:** rectangular `[H][W]` arrays with `W` and `H` each in the range `1..63`. Non-2D arrays or out-of-range dimensions are compile errors.
+**Valid sizes:** rectangular `[H][W]` arrays with `W` and `H` each in the range `1..96`. Non-2D arrays or out-of-range dimensions are compile errors.
 
 ```cpp
 constexpr uint8_t playerPixels[3][3] = {
@@ -24,7 +24,7 @@ constexpr uint8_t playerPixels[3][3] = {
 
 ## Step 2 — Create a Sprite Asset
 
-`Sprite` is a plain data asset — not a component. Use `Sprite::Create()` to turn your pixel array into a `Sprite`.
+`Sprite` is a plain data asset — not a component. Use `Sprite::Create()` to turn your pixel array into a `Sprite`, or include the generated asset header and use the `Assets` namespace when the converter has already done that work for you.
 
 ```cpp
 constexpr Sprite SPRITE_PLAYER = Sprite::Create(playerPixels, PALETTE_WARM);

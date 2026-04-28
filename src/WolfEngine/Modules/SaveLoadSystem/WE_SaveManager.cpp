@@ -1,5 +1,5 @@
 #include "WE_SaveManager.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include <new>
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 #include "stdint.h"
 #include "stdbool.h"
 #include "WolfEngine/Settings/WE_Settings.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include <type_traits>
 #include "WolfEngine/Utilities/WE_Vector2d.hpp"
 #include "WolfEngine/ComponentSystem/Components/WE_Comp_Transform.hpp"

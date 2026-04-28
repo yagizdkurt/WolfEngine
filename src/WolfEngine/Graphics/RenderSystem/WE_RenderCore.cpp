@@ -1,7 +1,7 @@
 #include "WolfEngine/Graphics/RenderSystem/WE_RenderCore.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
 #include "WolfEngine/Graphics/UserInterface/Fonts/WE_Font.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include "WolfEngine/WolfEngine.hpp"
 
 #ifndef IRAM_ATTR
@@ -13,7 +13,34 @@ void Renderer::initialize() {
     WE_ASSERT(m_driver->screenWidth  == Settings.render.screenWidth &&
               m_driver->screenHeight == Settings.render.screenHeight,
               "Driver dimensions do not match Settings.render screen size");
+
+#if WE_DUAL_CORE_RENDER
+    initDualCore();
+#endif
 }
+
+
+#if WE_DUAL_CORE_RENDER
+void Renderer::initDualCore() {
+    m_framebuffer = m_framebuffers[0];
+
+    m_renderReady       = xSemaphoreCreateBinary();   // starts empty
+    m_bufferFree        = xSemaphoreCreateBinary();   // starts empty
+    m_displayTaskExited = xSemaphoreCreateBinary();   // starts empty
+
+    xSemaphoreGive(m_bufferFree);  // prime: first render() takes immediately
+
+    xTaskCreatePinnedToCore(
+        Renderer::displayTask_wrapper,
+        "WE_DispTask",
+        DISPLAY_TASK_STACK_SIZE,
+        this,
+        DISPLAY_TASK_PRIORITY,
+        &m_displayTaskHandle,
+        DISPLAY_TASK_CORE_ID
+    );
+}
+#endif
 
 
 // -------------------------------------------------------------
@@ -51,8 +78,7 @@ bool Renderer::submitDrawCommand(const DrawCommand& cmd) {
 // -------------------------------------------------------------
 //  drawSpriteInternal
 //  Writes a single sprite into the framebuffer given unpacked
-//  command fields. Handles rotation index math, transparency,
-//  and per-pixel bounds checking against the game region.
+//  command fields. Handles rotation index math and transparency.
 // -------------------------------------------------------------
 void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
     const uint8_t*  pixels, const uint16_t* palette, int width, int height, Rotation rotation)
@@ -90,11 +116,6 @@ void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
             int drawX = x + px;
             int drawY = y + py;
 
-            // Per-pixel bounds check: clip to gameRegion.
-            // gameRegion/framebuffer compatibility is compile-time validated in WE_RenderCore.hpp.
-            if (drawX < Settings.render.gameRegion.x1 || drawX >= Settings.render.gameRegion.x2) continue;
-            if (drawY < Settings.render.gameRegion.y1 || drawY >= Settings.render.gameRegion.y2) continue;
-
             // Palette lookup (array bounds checked by resolver returns 0x0000 transparent if out of bounds)
             uint16_t color = ResolvePaletteColor(palette, paletteIndex);
             if (color == 0x0000) continue;
@@ -111,7 +132,7 @@ void IRAM_ATTR Renderer::drawSpriteInternal(int16_t x, int16_t y,
 // -------------------------------------------------------------
 //  drawFillRectInternal
 //  Fills a solid rectangle into the framebuffer.
-//  Clips to screen bounds; no gameRegion restriction.
+//  Clips to screen bounds.
 // -------------------------------------------------------------
 void Renderer::drawFillRectInternal(int16_t x, int16_t y, uint8_t w, uint8_t h, uint16_t color) {
     if (m_driver->requiresByteSwap) color = (color >> 8) | (color << 8);
@@ -322,21 +343,20 @@ void Renderer::beginFrame() {
 
 
 // -------------------------------------------------------------
-//  executeAndFlush
-//  Two-pass render: world pass then UI pass. Each pass sorts,
-//  executes, updates peakCommandCount, and clears independently.
-//  Flush is always full-screen.
+//  executeWorldPass / executeUIPass
+//  Shared helpers: sort, execute, update peak, clear.
+//  Called by both the single-core and dual-core render paths.
 // -------------------------------------------------------------
-void Renderer::executeAndFlush() {
-    // --- World pass ---
+void Renderer::executeWorldPass() {
     sortCommands();
     executeCommands();
     m_diagnostics.peakCommandCount =
         (m_commandCount > m_diagnostics.peakCommandCount)
         ? m_commandCount : m_diagnostics.peakCommandCount;
     clearCommands();
+}
 
-    // --- UI pass ---
+void Renderer::executeUIPass() {
     UI().render();  // UI elements submit FillRect/Line/Circle/TextRun commands
     sortCommands();
     executeCommands();
@@ -344,18 +364,49 @@ void Renderer::executeAndFlush() {
         (m_commandCount > m_diagnostics.peakCommandCount)
         ? m_commandCount : m_diagnostics.peakCommandCount;
     clearCommands();
-
-    // --- Flush: always full screen ---
-    m_driver->flush(m_framebuffer, 0, 0,
-                    m_driver->screenWidth, m_driver->screenHeight);
 }
 
 
 // -------------------------------------------------------------
+//  executeAndFlush
+//  Called by the single-core renderPass().
+// -------------------------------------------------------------
+void Renderer::executeAndFlush() {
+    executeWorldPass();
+    executeUIPass();
+    auto tf = WE_DiagBegin();
+    m_driver->flush(m_framebuffer, 0, 0,
+                    m_driver->screenWidth, m_driver->screenHeight);
+    m_renderDiag.flushUs = WE_DiagElapsedUs(tf);
+}
+
+
+// -------------------------------------------------------------
+//  renderPass — single-core implementation.
+//  Dual-core implementation lives in WE_RenderDualCore.cpp.
+// -------------------------------------------------------------
+#if !WE_DUAL_CORE_RENDER
+void Renderer::renderPass() {
+    executeAndFlush();
+}
+#endif
+
+
+// -------------------------------------------------------------
 //  render
-//  Master render function called every frame by WolfEngine.
+//  Unified entry point called every frame by WolfEngine.
+//  beginFrame and diagnostics live here; renderPass() supplies
+//  the path-specific frame content and flush strategy.
 // -------------------------------------------------------------
 void Renderer::render() {
+    auto t0 = WE_DiagBegin();
     beginFrame();
-    executeAndFlush();
+    renderPass();
+    m_renderDiag.renderTotalUs = WE_DiagElapsedUs(t0);
+    if (++m_diagFrameCount >= WE_DIAG_LOG_INTERVAL_FRAMES) {
+        WE_LOGI("DIAG", "renderTotal=%luus flush=%luus",
+            m_renderDiag.renderTotalUs,
+            m_renderDiag.flushUs);
+        m_diagFrameCount = 0;
+    }
 }
