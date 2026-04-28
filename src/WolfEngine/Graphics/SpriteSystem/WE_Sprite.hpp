@@ -90,3 +90,16 @@ struct Sprite {
         return { &pixels[0][0], palette, W, H, AX, AY };
     }
 };
+
+// =============================================================
+//  WE_Animation
+//  A lightweight animation asset — an array of Sprite frames
+//  and a frame count. Consumed by the Animator component.
+//
+//  USAGE:
+//      animator.setAnimation(&Assets::WALK);
+// =============================================================
+struct WE_Animation {
+    const Sprite* frames;     // pointer to array of Sprite frames in flash
+    uint8_t       frameCount; // number of frames
+};

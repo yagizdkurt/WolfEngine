@@ -20,29 +20,6 @@ void Renderer::initialize() {
 }
 
 
-#if WE_DUAL_CORE_RENDER
-void Renderer::initDualCore() {
-    m_framebuffer = m_framebuffers[0];
-
-    m_renderReady       = xSemaphoreCreateBinary();   // starts empty
-    m_bufferFree        = xSemaphoreCreateBinary();   // starts empty
-    m_displayTaskExited = xSemaphoreCreateBinary();   // starts empty
-
-    xSemaphoreGive(m_bufferFree);  // prime: first render() takes immediately
-
-    xTaskCreatePinnedToCore(
-        Renderer::displayTask_wrapper,
-        "WE_DispTask",
-        DISPLAY_TASK_STACK_SIZE,
-        this,
-        DISPLAY_TASK_PRIORITY,
-        &m_displayTaskHandle,
-        DISPLAY_TASK_CORE_ID
-    );
-}
-#endif
-
-
 // -------------------------------------------------------------
 //  clearCommands
 //  Resets the command buffer write pointer. Does not touch

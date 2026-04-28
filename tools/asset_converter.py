@@ -2,12 +2,11 @@
 WolfEngine asset converter.
 Usage: asset_converter.py <images_dir> <output_dir> <palettes_dir>
 
-Scans <images_dir> for PNG files, converts each to a constexpr Sprite
-definition, and writes .cpp + WE_Assets.hpp into <output_dir>.
+Scans <images_dir> for PNG files (→ Sprite) and GIF files (→ WE_Animation),
+converts each and writes .cpp + WE_Assets.hpp into <output_dir>.
 """
 
 import sys
-import os
 import pathlib
 
 if sys.version_info >= (3, 11):
@@ -15,7 +14,7 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib
 
-from PIL import Image
+from PIL import Image, ImageSequence
 
 
 # ---------------------------------------------------------------------------
@@ -85,24 +84,22 @@ def palette_rgb_from_toml(data: dict) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Image conversion
+# Image conversion — PNG
 # ---------------------------------------------------------------------------
 
 def auto_palette_convert(img_rgba: Image.Image):
     """
     Auto-quantize to at most 31 colors.
     Returns (indices_2d, palette565_32) where:
-      indices_2d   — list of rows, each row a list of uint8 palette indices
+      indices_2d    — list of rows, each row a list of uint8 palette indices
       palette565_32 — list of 32 uint16 RGB565 values (index 0 always 0x0000)
     """
     w, h = img_rgba.size
-    w_, h_ = img_rgba.size
     pix_ = img_rgba.load()
-    pixels = [pix_[x, y] for y in range(h_) for x in range(w_)]
+    pixels = [pix_[x, y] for y in range(h) for x in range(w)]
 
     opaque_rgb = [(r, g, b) for r, g, b, a in pixels if a >= 128]
 
-    # Deduplicate while preserving insertion order
     seen = {}
     for c in opaque_rgb:
         if c not in seen:
@@ -140,9 +137,8 @@ def named_palette_convert(img_rgba: Image.Image, palette_rgb: list):
     Returns indices_2d only (the palette array is the named constant).
     """
     w, h = img_rgba.size
-    w_, h_ = img_rgba.size
     pix_ = img_rgba.load()
-    pixels = [pix_[x, y] for y in range(h_) for x in range(w_)]
+    pixels = [pix_[x, y] for y in range(h) for x in range(w)]
 
     indices_2d = []
     for y in range(h):
@@ -156,11 +152,116 @@ def named_palette_convert(img_rgba: Image.Image, palette_rgb: list):
 
 
 # ---------------------------------------------------------------------------
+# Image conversion — GIF
+# ---------------------------------------------------------------------------
+
+def extract_gif_frames(path):
+    """
+    Open a GIF and return a list of RGBA PIL Images, one per frame.
+    Returns None and prints an error if the GIF fails validation.
+    """
+    name = pathlib.Path(path).name
+    try:
+        gif = Image.open(path)
+    except Exception as e:
+        print(f"ERROR: Could not open {name}: {e}")
+        return None
+
+    frames = [frame.copy().convert('RGBA') for frame in ImageSequence.Iterator(gif)]
+
+    if len(frames) < 2:
+        print(f"ERROR: {name} has only {len(frames)} frame — use a PNG for single sprites. Skipping.")
+        return None
+
+    w0, h0 = frames[0].size
+    for f in frames[1:]:
+        if f.size != (w0, h0):
+            print(f"ERROR: {name} has inconsistent frame sizes — all frames must be the same dimensions. Skipping.")
+            return None
+
+    if w0 > 96 or h0 > 96:
+        print(f"ERROR: {name} frame size {w0}x{h0} exceeds max dimension 96. Skipping.")
+        return None
+
+    return frames
+
+
+def gif_auto_palette_convert(frames: list):
+    """
+    Build a shared palette from all frames combined, then map each frame to indices.
+    Returns (all_indices_2d, palette565) where all_indices_2d is a list of
+    per-frame indices_2d arrays.
+    """
+    all_opaque = []
+    for frame in frames:
+        all_opaque += [(r, g, b) for r, g, b, a in frame.getdata() if a >= 128]
+
+    if len(set(all_opaque)) <= 31:
+        palette_rgb = list(dict.fromkeys(all_opaque))
+        palette_rgb += [(0, 0, 0)] * (31 - len(palette_rgb))
+    else:
+        if not all_opaque:
+            palette_rgb = [(0, 0, 0)] * 31
+        else:
+            temp = Image.new('RGB', (len(all_opaque), 1))
+            temp.putdata(all_opaque)
+            q = temp.quantize(colors=31, dither=0)
+            raw = q.getpalette()[:93]
+            palette_rgb = [(raw[i], raw[i + 1], raw[i + 2]) for i in range(0, 93, 3)]
+
+    palette565 = [0x0000] + [rgb888_to_rgb565(*c) for c in palette_rgb]
+
+    all_indices_2d = []
+    for frame in frames:
+        w, h = frame.size
+        pixels = list(frame.getdata())
+        indices_2d = []
+        for y in range(h):
+            row = []
+            for x in range(w):
+                r, g, b, a = pixels[y * w + x]
+                row.append(0 if a < 128 else nearest_idx(r, g, b, palette_rgb))
+            indices_2d.append(row)
+        all_indices_2d.append(indices_2d)
+
+    return all_indices_2d, palette565
+
+
+def gif_named_palette_convert(frames: list, palette_rgb: list):
+    """
+    Map each frame's pixels to the nearest color in palette_rgb.
+    Returns all_indices_2d (list of per-frame indices_2d).
+    """
+    all_indices_2d = []
+    for frame in frames:
+        w, h = frame.size
+        pixels = list(frame.getdata())
+        indices_2d = []
+        for y in range(h):
+            row = []
+            for x in range(w):
+                r, g, b, a = pixels[y * w + x]
+                row.append(0 if a < 128 else nearest_idx(r, g, b, palette_rgb))
+            indices_2d.append(row)
+        all_indices_2d.append(indices_2d)
+    return all_indices_2d
+
+
+# ---------------------------------------------------------------------------
 # Code generation
 # ---------------------------------------------------------------------------
 
 def render_pixel_array(stem: str, indices_2d: list, w: int, h: int) -> str:
     lines = [f"static constexpr uint8_t s_{stem}_pixels[{h}][{w}] = {{"]
+    for row in indices_2d:
+        inner = ', '.join(str(v) for v in row) + ','
+        lines.append(f"    {{ {inner} }},")
+    lines.append("};")
+    return '\n'.join(lines)
+
+
+def render_frame_array(stem: str, frame_idx: int, indices_2d: list, w: int, h: int) -> str:
+    lines = [f"static constexpr uint8_t s_{stem}_f{frame_idx}[{h}][{w}] = {{"]
     for row in indices_2d:
         inner = ', '.join(str(v) for v in row) + ','
         lines.append(f"    {{ {inner} }},")
@@ -221,7 +322,73 @@ def emit_named_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
     return str(out_path)
 
 
-def emit_assets_header(output_dir: str, symbols: list):
+def emit_auto_gif_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
+                      all_indices_2d: list, palette565: list, w: int, h: int):
+    n = len(all_indices_2d)
+    palette_block = render_auto_palette_array(stem, palette565)
+    frame_blocks = '\n\n'.join(
+        render_frame_array(stem, i, all_indices_2d[i], w, h)
+        for i in range(n)
+    )
+    frames_array_lines = [f"static constexpr Sprite s_{stem}_frames[{n}] = {{"]
+    for i in range(n):
+        frames_array_lines.append(f"    Sprite::Create(s_{stem}_f{i}, s_{stem}_palette),")
+    frames_array_lines.append("};")
+    frames_array = '\n'.join(frames_array_lines)
+
+    content = (
+        f"// AUTO-GENERATED — do not edit\n"
+        f"// Source: {source_rel}  [{w}W x {h}H]  {n} frames\n"
+        f"#include \"WE_Assets.hpp\"\n"
+        f"\n"
+        f"{palette_block}\n"
+        f"\n"
+        f"{frame_blocks}\n"
+        f"\n"
+        f"{frames_array}\n"
+        f"\n"
+        f"constexpr WE_Animation Assets::{symbol} = {{ s_{stem}_frames, {n} }};\n"
+    )
+
+    out_path = pathlib.Path(output_dir) / f"{stem}.cpp"
+    out_path.write_text(content, encoding='utf-8')
+    return str(out_path)
+
+
+def emit_named_gif_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
+                       all_indices_2d: list, w: int, h: int,
+                       palette_name: str, palette_header: str):
+    n = len(all_indices_2d)
+    include_path = f"WolfEngine/Graphics/ColorPalettes/{palette_header}"
+    frame_blocks = '\n\n'.join(
+        render_frame_array(stem, i, all_indices_2d[i], w, h)
+        for i in range(n)
+    )
+    frames_array_lines = [f"static constexpr Sprite s_{stem}_frames[{n}] = {{"]
+    for i in range(n):
+        frames_array_lines.append(f"    Sprite::Create(s_{stem}_f{i}, {palette_name}),")
+    frames_array_lines.append("};")
+    frames_array = '\n'.join(frames_array_lines)
+
+    content = (
+        f"// AUTO-GENERATED — do not edit\n"
+        f"// Source: {source_rel}  [{w}W x {h}H]  {n} frames  palette: {palette_name}\n"
+        f"#include \"WE_Assets.hpp\"\n"
+        f"#include \"{include_path}\"\n"
+        f"\n"
+        f"{frame_blocks}\n"
+        f"\n"
+        f"{frames_array}\n"
+        f"\n"
+        f"constexpr WE_Animation Assets::{symbol} = {{ s_{stem}_frames, {n} }};\n"
+    )
+
+    out_path = pathlib.Path(output_dir) / f"{stem}.cpp"
+    out_path.write_text(content, encoding='utf-8')
+    return str(out_path)
+
+
+def emit_assets_header(output_dir: str, sprite_symbols: list, anim_symbols: list):
     lines = [
         "// AUTO-GENERATED — do not edit",
         "#pragma once",
@@ -229,8 +396,10 @@ def emit_assets_header(output_dir: str, symbols: list):
         "",
         "namespace Assets {",
     ]
-    for sym in symbols:
+    for sym in sprite_symbols:
         lines.append(f"    extern const Sprite {sym};")
+    for sym in anim_symbols:
+        lines.append(f"    extern const WE_Animation {sym};")
     lines.append("}")
     lines.append("")
 
@@ -253,41 +422,45 @@ def main(images_dir: str, output_dir: str, palettes_dir: str):
     if assets_toml_path.exists():
         asset_config = _load_toml(assets_toml_path)
 
-    # --- Collect PNGs (sorted for deterministic output) ---
+    # --- Collect PNGs and GIFs (sorted for deterministic output) ---
     png_files = sorted(images_path.rglob('*.png'), key=lambda p: str(p).lower())
-    png_config_keys = {
+    gif_files = sorted(images_path.rglob('*.gif'), key=lambda p: str(p).lower())
+
+    all_asset_keys = {
         "_".join(p.relative_to(images_path).with_suffix("").parts).lower().replace("-", "_")
-        for p in png_files
+        for p in png_files + gif_files
     }
 
     # --- Validate assets.toml keys ---
     for key in asset_config:
-        if key.lower() not in png_config_keys:
-            print(f"WARNING: assets.toml entry '[{key}]' has no matching PNG — skipping.")
+        if key.lower() not in all_asset_keys:
+            print(f"WARNING: assets.toml entry '[{key}]' has no matching PNG or GIF — skipping.")
 
     # --- Track existing .cpp files for stale cleanup ---
     existing_cpps = {p for p in output_path.glob('*.cpp')}
     written_cpps = set()
 
-    # --- Detect symbol conflicts ---
+    # --- Detect symbol conflicts across PNGs and GIFs ---
     symbol_map = {}
     conflicts = set()
-    for png_path in png_files:
-        sym = name_to_symbol(png_path, images_path)
+    for path in png_files + gif_files:
+        sym = name_to_symbol(path, images_path)
         if sym in symbol_map:
             if sym not in conflicts:
                 print(f"ERROR: Symbol conflict — Assets::{sym} would be produced by both:\n"
-                      f"  {symbol_map[sym]}\n  {png_path}\n"
+                      f"  {symbol_map[sym]}\n  {path}\n"
                       f"Skipping both. Rename one of these files.")
             conflicts.add(sym)
         else:
-            symbol_map[sym] = png_path
+            symbol_map[sym] = path
 
     converted = 0
     skipped = 0
     errors = 0
-    symbols = []
+    sprite_symbols = []
+    anim_symbols = []
 
+    # --- Process PNGs → Sprite ---
     for png_path in png_files:
         symbol = name_to_symbol(png_path, images_path)
 
@@ -318,7 +491,6 @@ def main(images_dir: str, output_dir: str, palettes_dir: str):
         palette_key = cfg.get('palette') if cfg else None
 
         if palette_key:
-            # Named palette path
             palette_data = load_named_palette(palettes_dir, palette_key)
             if palette_data is None:
                 available = [p.stem for p in pathlib.Path(palettes_dir).glob('*.toml')]
@@ -335,16 +507,66 @@ def main(images_dir: str, output_dir: str, palettes_dir: str):
                 output_dir, stem, symbol, source_rel, indices_2d, w, h, palette_name, palette_header
             )
         else:
-            # Auto-palette path
             indices_2d, palette565 = auto_palette_convert(img)
             cpp_path = emit_auto_cpp(
                 output_dir, stem, symbol, source_rel, indices_2d, palette565, w, h
             )
 
         written_cpps.add(pathlib.Path(cpp_path))
-        symbols.append(symbol)
+        sprite_symbols.append(symbol)
         converted += 1
         print(f"  Converted: {source_rel}  [{w}W x {h}H]  →  {stem}.cpp")
+
+    # --- Process GIFs → WE_Animation ---
+    for gif_path in gif_files:
+        symbol = name_to_symbol(gif_path, images_path)
+
+        if symbol in conflicts:
+            errors += 1
+            continue
+
+        stem = symbol.lower()
+        relative = gif_path.relative_to(images_path)
+        source_rel = str(relative).replace("\\", "/")
+        config_key = "_".join(relative.with_suffix("").parts).lower().replace("-", "_")
+
+        frames = extract_gif_frames(gif_path)
+        if frames is None:
+            errors += 1
+            continue
+
+        w, h = frames[0].size
+        n = len(frames)
+
+        cfg = asset_config.get(config_key, {})
+        palette_key = cfg.get('palette') if cfg else None
+
+        if palette_key:
+            palette_data = load_named_palette(palettes_dir, palette_key)
+            if palette_data is None:
+                available = [p.stem for p in pathlib.Path(palettes_dir).glob('*.toml')]
+                print(f"ERROR: Palette '{palette_key}' not found for {gif_path.name}. "
+                      f"Available palettes: {available}. Skipping.")
+                errors += 1
+                continue
+
+            palette_rgb = palette_rgb_from_toml(palette_data)
+            palette_name = palette_data['meta']['name']
+            palette_header = palette_data['meta']['header']
+            all_indices_2d = gif_named_palette_convert(frames, palette_rgb)
+            cpp_path = emit_named_gif_cpp(
+                output_dir, stem, symbol, source_rel, all_indices_2d, w, h, palette_name, palette_header
+            )
+        else:
+            all_indices_2d, palette565 = gif_auto_palette_convert(frames)
+            cpp_path = emit_auto_gif_cpp(
+                output_dir, stem, symbol, source_rel, all_indices_2d, palette565, w, h
+            )
+
+        written_cpps.add(pathlib.Path(cpp_path))
+        anim_symbols.append(symbol)
+        converted += 1
+        print(f"  Converted: {source_rel}  [{w}W x {h}H]  {n} frames  →  {stem}.cpp")
 
     # --- Clean up stale .cpp files ---
     for stale in existing_cpps - written_cpps:
@@ -352,7 +574,7 @@ def main(images_dir: str, output_dir: str, palettes_dir: str):
         print(f"  Removed stale: {stale.name}")
 
     # --- Emit WE_Assets.hpp ---
-    emit_assets_header(output_dir, symbols)
+    emit_assets_header(output_dir, sprite_symbols, anim_symbols)
 
     # --- Summary ---
     print(f"\nAsset conversion complete: {converted} converted, {skipped} skipped, {errors} errors.")

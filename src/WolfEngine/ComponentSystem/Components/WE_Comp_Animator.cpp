@@ -2,11 +2,11 @@
 #include "WolfEngine/GameObjectSystem/WE_GameObject.hpp"
 
 Animator::Animator(SpriteRenderer*  mySpriteRenderer,
-                   const Animation& animation,
+                   const WE_Animation* animation,
                    uint8_t          frameDuration)
     : m_mySpriteRenderer (mySpriteRenderer)
-    , m_frames           (animation.frames)
-    , m_frameCount       (animation.frameCount)
+    , m_frames           (animation ? animation->frames : nullptr)
+    , m_frameCount       (animation ? animation->frameCount : 0)
     , m_frameDuration    (frameDuration)
 {
     type        = COMP_ANIMATOR;
@@ -33,9 +33,9 @@ void Animator::setFrame(uint8_t frame) {
     if (m_mySpriteRenderer) m_mySpriteRenderer->setSprite(&m_frames[m_currentFrame]);
 }
 
-void Animator::setAnimation(const Animation& animation) {
-    m_frames       = animation.frames;
-    m_frameCount   = animation.frameCount;
+void Animator::setAnimation(const WE_Animation* animation) {
+    m_frames       = animation ? animation->frames : nullptr;
+    m_frameCount   = animation ? animation->frameCount : 0;
     m_currentFrame = 0;
     m_tickCounter  = 0;
     if (m_mySpriteRenderer) m_mySpriteRenderer->setSprite(&m_frames[0]);
