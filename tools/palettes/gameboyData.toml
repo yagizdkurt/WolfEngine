@@ -3,6 +3,7 @@ name = "PALETTE_GAMEBOY"
 enum = "Gameboy"
 header = "WE_Palette_Gameboy.hpp"
 description = "Inspired by the original DMG Game Boy LCD green palette. Extends the classic 4-shade look into 31 tones while keeping the iconic green-tinted monochrome aesthetic."
+managed     = false
 
 [[color]]
 index = 0

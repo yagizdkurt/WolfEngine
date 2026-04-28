@@ -3,6 +3,7 @@ name = "PALETTE_GRAYSCALE"
 enum = "Grayscale"
 header = "WE_Palette_Grayscale.hpp"
 description = "31 shades from near-black to white. Useful for UI, shadows, monochrome sprites, and debug visuals."
+managed     = false
 
 [[color]]
 index = 0

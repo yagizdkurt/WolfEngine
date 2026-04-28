@@ -3,6 +3,7 @@ name = "PALETTE_SUNSET"
 enum = "Sunset"
 header = "WE_Palette_Sunset.hpp"
 description = "Deep purples, magentas, oranges, and warm pinks. Useful for evening scenes, neon/synthwave aesthetics, and dramatic sky or background gradients."
+managed     = false
 
 [[color]]
 index = 0

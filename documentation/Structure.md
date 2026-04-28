@@ -90,17 +90,16 @@ WolfEngine/
     ├── WE_Vector2d.hpp            # Vec2 (float) + IntVec2; full operator set; lerp, dist, fromAngle
     └── WE_Debug.h                 # DebugLog/DebugErr macros → ESP_LOGI/LOGE; no-op when disabled
 
-GameCode
+GameCode/
 └── Your actual code for game development
 
+GeneratedAssets/  # Generated assets from conversion pipeline
+│
+├── palettes/     # Generated palettes
+└── sprites/      # Generated sprites
+
 Main.cpp ── Entry point
-
 ```
-
-**Non-obvious notes:**
--
--
--
 
 ## Documentation Folder:
 ```
@@ -109,9 +108,29 @@ Documentation/
 ├── AI_Documentation.md  # AI-oriented context: architecture, design decisions, constraints, patterns
 ├── Documentation.md     # Human-readable documentation: system overview, modules, usage, examples
 ├── Structure.md         # Project structure reference (this file)
+├── wiki/                # User-facing wiki documentation
 ├── KNOWN_ISSUES.md      # Active known issues and current limitations
 ├── SOLVED_ISSUES.md     # Resolved issues archive
 └── SDL_ISSUES.md        # Desktop/SDL-specific issues and workarounds
+```
+
+## Tools Folder:
+```
+tools/
+│
+├── generate_palettes.py  # Palette header generator
+├── asset_converter.py    # Sprite converter
+├── requirements.txt      # Python dependencies
+└── palettes/             # Palette TOML definitions
+```
+
+## Images Folder:
+```
+Images/
+│
+├── assets.toml           # Optional per-image configuration
+├── *.png                 # Source sprite images
+└── subfolders/           # Optional nested sprite organization
 ```
 
 ## Desktop Folder:

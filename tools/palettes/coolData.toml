@@ -3,6 +3,7 @@ name = "PALETTE_COOL"
 enum = "Cool"
 header = "WE_Palette_Cool.hpp"
 description = "Blues, greens, teals, and cool neutrals. Useful for water, ice, forests, night scenes, and UI themes."
+managed     = false
 
 [[color]]
 index = 0

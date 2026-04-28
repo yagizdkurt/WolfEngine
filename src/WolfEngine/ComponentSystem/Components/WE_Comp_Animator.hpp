@@ -3,24 +3,11 @@
 #include "WolfEngine/Graphics/SpriteSystem/WE_Sprite.hpp"
 #include "WE_Comp_SpriteRenderer.hpp"
 #include "WE_BaseComp.hpp"
-
-// =============================================================
-//  A named collection of Sprite frames with a built-in count.
-//  Always declare as constexpr so frame data lives in flash.
-//
-//  EXAMPLE:
-//      constexpr Sprite WALK_FRAMES[] = { ... };
-//      constexpr Animation WALK = Animation::Create(WALK_FRAMES);
-// =============================================================
-struct Animation {
-    const Sprite* frames;
-    uint8_t       frameCount;
-    template<int N> static constexpr Animation Create(const Sprite (&frames)[N]) { return { frames, static_cast<uint8_t>(N) }; }
-};
+#include "WolfEngine/Graphics/SpriteSystem/WE_Sprite.hpp"
 
 
 // =============================================================
-//  WE_Comp_Animator.hpp
+//  WE_Comp_Animator.hpp DEPRECATED NEEDS UPDATING
 //  The Animator component drives a SpriteRenderer by cycling
 //  through an Animation's Sprite frames automatically.
 //
@@ -47,7 +34,7 @@ struct Animation {
 //      class Player : public GameObject {
 //      public:
 //          SpriteRenderer spriteRenderer = SpriteRenderer(this, &WALK_FRAMES[0], LAYER_PLAYER);
-//          Animator       animator       = Animator(&spriteRenderer, WALK, 8);
+//          Animator       animator       = Animator(&spriteRenderer, &WALK, 8);
 //      };
 // =============================================================
 
@@ -57,11 +44,11 @@ public:
     // frames         — array of Sprite assets representing animation frames
     // frameCount     — number of frames in the array
     // frameDuration  — how many game ticks each frame is shown for
-    Animator(SpriteRenderer* owner, const Animation& animation, uint8_t frameDuration = 8);
+    Animator(SpriteRenderer* owner, const WE_Animation* animation, uint8_t frameDuration = 8);
 
     void setFrame(uint8_t frame); // Jump to a specific frame immediately
 
-    void setAnimation(const Animation& animation); // Change the entire animation
+    void setAnimation(const WE_Animation* animation); // Change the entire animation
 
     // Change how many ticks each frame is shown for
     void setFrameDuration(uint8_t duration) { m_frameDuration = duration; }

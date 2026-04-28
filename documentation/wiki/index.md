@@ -1,49 +1,82 @@
-# WolfEngine Wiki
+# WolfEngine
 
-Welcome to the WolfEngine documentation. Use the sections below to navigate the current wiki structure.
+WolfEngine is a 2D game engine for the ESP32. It runs on a microcontroller, talks to a small TFT display, and gives you a familiar, component-based workflow for building games on hardware that fits in your hand.
 
----
-
-## Getting Started
-
-- [Installation and Setup](getting-started/installation-and-setup.md)
-- [First GameObject](getting-started/first-gameobject.md)
+The design draws heavily from Unity — you work with GameObjects, attach Components, override `Start()` and `Update()`, and let the engine handle the loop. If you've written a Unity game before, a lot of this will feel like home. If you haven't, it's a clean model that's easy to learn.
 
 ---
 
-## Core Systems
+## What you're working with
 
-- [Engine](core-systems/engine.md)
-- [Input](core-systems/input.md)
-- [Audio](core-systems/audio.md)
-- [Time and Timer](core-systems/time-and-timer.md)
-- [UI Manager](ui-system/ui-manager.md)
-- [UI Panel](ui-system/uipanel.md)
-- [UI Label](ui-system/uilabel.md)
-- [Camera](core-systems/camera.md)
+The target platform is an **ESP32** driving a **TFT display**. Everything in the engine is designed around that constraint.
+
+A minimal game looks like this:
+
+```cpp
+#include "WolfEngine/WolfEngine.hpp"
+
+class Player : public GameObject {
+public:
+    // Image itself
+    static constexpr uint8_t playerSpriteData[6][6] = {
+        {0, 0, 1, 1, 0, 0},
+        {0, 1, 2, 2, 1, 0},
+        {1, 2, 3, 3, 2, 1},
+        {1, 2, 3, 3, 2, 1},
+        {0, 1, 2, 2, 1, 0},
+        {0, 0, 1, 1, 0, 0}
+    };
+
+    // Sprite
+    static constexpr Sprite Splayer = Sprite::Create(playerSpriteData, PALETTE_WARM);
+
+    // Renderer
+    SpriteRenderer spriteRenderer = SpriteRenderer(this, &Splayer);
+    Controller* controller = nullptr;
+
+    void Start() override {
+        transform.position = { 64, 64 };
+        controller = Input().getController(0);
+    }
+
+    void Update() override {
+        if (!controller) return;
+        transform.position.x += controller->getAxis(JoyAxis::X) * 2.0f;
+        transform.position.y += controller->getAxis(JoyAxis::Y) * 2.0f;
+    }
+};
+
+extern "C" void app_main() {
+    Engine().StartEngine();
+    GameObject::Create<Player>();
+    Engine().StartGame(); // never returns
+}
+```
+
+`StartGame()` takes over and runs the loop. Your code lives in `Start()`, `Update()`, and the other lifecycle hooks. The engine handles input polling, frame pacing, rendering, and the display flush every frame.
 
 ---
 
-## GameObjects and Components
+## What's inside
 
-- [GameObject](gameobjects-and-components/gameobject.md)
-- [Transform](gameobjects-and-components/transform.md)
-- [Sprite Renderer](gameobjects-and-components/sprite-renderer.md)
-- [Animator](gameobjects-and-components/animator.md)
+The engine ships with a set of systems that cover the common needs of a game:
 
----
+- **Input** — button events and analog joystick axes, per-controller
+- **Camera** — world-space viewport with follow support
+- **Audio** — tone playback on the onboard buzzer
+- **Renderer** — layered draw command queue with a world pass and a UI pass
+- **UI System** — retained-mode panels and labels rendered in a separate pass after the world
+- **Animator** — frame-based sprite animation with state transitions
+- **Time** — delta time and frame-rate-aware timers
 
-## Engine Configuration
-
-- [General Settings](engine-settings/settings.md)
-- [Input Settings](engine-settings/input.md)
-- [Pin Definitions](engine-settings/pin-definitions.md)
-- [Render Layers](engine-settings/render-layers.md)
+Systems are globally accessible by name — `Input()`, `UI()`, `Sound()`, `MainCamera()`, `RenderSys()` — so you can reach them from anywhere without passing references around.
 
 ---
 
-## Graphics
+## Where to start
 
-- [How To Setup Graphics](graphics/how-to-setup-graphics.md)
-- [Palette](graphics/palette.md)
-- [Buffer](graphics/buffer.md)
+If you haven't set up the hardware yet, go to [Installation and Setup](getting-started/installation-and-setup.md) first.
+
+If you want the project structure and startup flow first, read [Engine Basics](getting-started/Engine-Basics.md) for the folder layout, `main.cpp`, and object creation pattern.
+
+Everything else  is in the sidebar.

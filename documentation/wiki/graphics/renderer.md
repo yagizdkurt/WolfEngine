@@ -33,7 +33,7 @@ Framebuffer is flushed once per frame as full-screen.
 - `Circle`
 - `TextRun`
 
-Sprites still clip to `Settings.render.gameRegion`. UI primitives clip to screen bounds.
+Sprites are clipped to screen bounds. UI primitives clip to screen bounds.
 
 ---
 

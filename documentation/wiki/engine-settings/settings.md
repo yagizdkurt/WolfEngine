@@ -91,13 +91,14 @@ Display target is selected by compile definitions. `WE_Settings.hpp` defines `DI
 
 ```cpp
 .render = {
-    .gameRegion = { 0, 0, 128, 108 },
-    .maxDrawCommands = 128,
+    .screenWidth            = RENDER_SCREEN_WIDTH,
+    .screenHeight           = RENDER_SCREEN_HEIGHT,
+    .maxDrawCommands        = 128,
     .defaultBackgroundPixel = 0x0000,
-    .spriteSystemEnabled = true,
+    .spriteSystemEnabled    = true,
     .cleanFramebufferEachFrame = true,
-    .targetFrameTimeUs = 33333,
-    .displayTarget = DisplayTarget::ST7735,
+    .targetFrameTimeUs      = 33333,
+    .displayTarget          = DisplayTarget::ST7735,
 },
 ```
 
@@ -117,11 +118,10 @@ Common values:
 | Green | 0x07E0  |
 | Blue  | 0x001F  |
 
-### gameRegion
+### Sprite clipping
 
-Rectangular area used by world sprite clipping/culling. `{ x1, y1, x2, y2 }` (`x2` and `y2` are exclusive).
-
-`gameRegion` affects sprite drawing bounds. UI primitive commands are clipped to screen bounds, not `gameRegion`.
+Sprites are clipped to screen bounds; there is no separate `gameRegion` setting in `Settings.render`.
+UI primitive commands are clipped to screen bounds as well.
 
 ### spriteSystemEnabled
 

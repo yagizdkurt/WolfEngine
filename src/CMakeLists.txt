@@ -13,3 +13,5 @@ idf_component_register(SRCS ${app_sources}
         esp_common
         esp_lcd
 )
+
+include_directories(${CMAKE_SOURCE_DIR}/src/GeneratedAssets)
