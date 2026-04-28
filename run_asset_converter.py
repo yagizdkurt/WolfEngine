@@ -15,12 +15,27 @@ except ImportError:
     print("Asset converter: Pillow not found — installing into PlatformIO Python...")
     subprocess.check_call([python, "-m", "pip", "install", "Pillow"])
 
+# Step 1 — generate palette headers
+result = subprocess.run(
+    [
+        python,
+        os.path.join(project_dir, "tools", "generate_palettes.py"),
+        os.path.join(project_dir, "tools", "palettes"),
+        os.path.join(project_dir, "src", "GeneratedAssets", "palettes"),
+    ],
+    cwd=project_dir,
+)
+if result.returncode != 0:
+    print("ERROR: Palette generator failed (see output above)")
+    env.Exit(result.returncode)
+
+# Step 2 — convert image assets
 result = subprocess.run(
     [
         python,
         os.path.join(project_dir, "tools", "asset_converter.py"),
         os.path.join(project_dir, "Images"),
-        os.path.join(project_dir, "src", "GeneratedAssets"),
+        os.path.join(project_dir, "src", "GeneratedAssets", "sprites"),
         os.path.join(project_dir, "tools", "palettes"),
     ],
     cwd=project_dir,

@@ -32,10 +32,16 @@
 # then exclude build and game specific sources...
 desktop/build/
 src/GameCode/**
-src/GeneratedAssets/**
+src/GeneratedAssets/WE_Assets.hpp
+src/GeneratedAssets/palettes/**
+src/GeneratedAssets/sprites/**
 Images/**
 
 #but not config files in those folders...
 !Images/assets.toml
 !src/GeneratedAssets/Readme.md
 !test/readme.md
+
+# and finally not to ignore empty folders...
+!src/GeneratedAssets/sprites/.gitkeep
+!src/GeneratedAssets/palettes/.gitkeep

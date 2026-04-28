@@ -233,7 +233,7 @@ def emit_assets_header(output_dir: str, symbols: list):
     lines.append("}")
     lines.append("")
 
-    out_path = pathlib.Path(output_dir) / "WE_Assets.hpp"
+    out_path = pathlib.Path(output_dir).parent / "WE_Assets.hpp"
     out_path.write_text('\n'.join(lines), encoding='utf-8')
 
 

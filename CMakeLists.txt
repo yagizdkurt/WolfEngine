@@ -37,11 +37,15 @@ endif()
 add_custom_target(asset_converter ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/src/GeneratedAssets
     COMMAND ${Python3_EXECUTABLE}
+        ${CMAKE_SOURCE_DIR}/tools/generate_palettes.py
+        ${CMAKE_SOURCE_DIR}/tools/palettes
+        ${CMAKE_SOURCE_DIR}/src/GeneratedAssets/palettes
+    COMMAND ${Python3_EXECUTABLE}
         ${CMAKE_SOURCE_DIR}/tools/asset_converter.py
         ${CMAKE_SOURCE_DIR}/Images
-        ${CMAKE_SOURCE_DIR}/src/GeneratedAssets
+        ${CMAKE_SOURCE_DIR}/src/GeneratedAssets/sprites
         ${CMAKE_SOURCE_DIR}/tools/palettes
-    COMMENT "Converting image assets..."
+    COMMENT "Generating palettes and converting image assets..."
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 

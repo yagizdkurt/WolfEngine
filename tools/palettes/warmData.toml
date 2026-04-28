@@ -3,6 +3,7 @@ name = "PALETTE_WARM"
 enum = "Warm"
 header = "WE_Palette_Warm.hpp"
 description = "Reds, oranges, yellows, earth tones, and warm neutrals. Useful for fire, lava, desert, autumn, and warm-lit scenes."
+managed     = false
 
 [[color]]
 index = 0
