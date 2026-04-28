@@ -1,5 +1,6 @@
 #include "WE_RenderCore.hpp"
 #include <utility> // for std::swap
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 
 #if WE_DUAL_CORE_RENDER
 
@@ -12,17 +13,27 @@ void Renderer::displayTask_impl() {
         xSemaphoreTake(m_renderReady, portMAX_DELAY);
         if (m_displayTaskShouldExit) break;
 
-        int tmp        = m_frontBufIdx;
-        m_frontBufIdx  = m_backBufIdx;
-        m_backBufIdx   = tmp;
+        m_frontBufIdx ^= 1;
+        m_backBufIdx = m_frontBufIdx ^ 1;
 
+        auto tf = WE_DiagBegin();
         m_driver->flush(m_framebuffers[m_frontBufIdx],
                         0, 0, m_driver->screenWidth, m_driver->screenHeight);
+        m_lastFlushUs = WE_DiagElapsedUs(tf);
 
         xSemaphoreGive(m_bufferFree);
     }
     xSemaphoreGive(m_displayTaskExited);
     vTaskDelete(NULL);
+}
+
+void Renderer::renderPass() {
+    xSemaphoreTake(m_bufferFree, portMAX_DELAY);
+    m_framebuffer = m_framebuffers[m_backBufIdx];
+    executeWorldPass();
+    executeUIPass();
+    xSemaphoreGive(m_renderReady);
+    m_renderDiag.flushUs = m_lastFlushUs;
 }
 
 void Renderer::initDualCore() {

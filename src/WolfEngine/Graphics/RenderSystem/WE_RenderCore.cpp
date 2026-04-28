@@ -1,7 +1,7 @@
 #include "WolfEngine/Graphics/RenderSystem/WE_RenderCore.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
 #include "WolfEngine/Graphics/UserInterface/Fonts/WE_Font.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include "WolfEngine/WolfEngine.hpp"
 
 #ifndef IRAM_ATTR
@@ -369,32 +369,44 @@ void Renderer::executeUIPass() {
 
 // -------------------------------------------------------------
 //  executeAndFlush
-//  Single-core orchestrator: world pass + UI pass + flush.
-//  Only called by the single-core render() path.
+//  Called by the single-core renderPass().
 // -------------------------------------------------------------
 void Renderer::executeAndFlush() {
     executeWorldPass();
     executeUIPass();
+    auto tf = WE_DiagBegin();
     m_driver->flush(m_framebuffer, 0, 0,
                     m_driver->screenWidth, m_driver->screenHeight);
+    m_renderDiag.flushUs = WE_DiagElapsedUs(tf);
 }
 
 
 // -------------------------------------------------------------
+//  renderPass — single-core implementation.
+//  Dual-core implementation lives in WE_RenderDualCore.cpp.
+// -------------------------------------------------------------
+#if !WE_DUAL_CORE_RENDER
+void Renderer::renderPass() {
+    executeAndFlush();
+}
+#endif
+
+
+// -------------------------------------------------------------
 //  render
-//  Master render function called every frame by WolfEngine.
-//  Two implementations selected at compile time.
+//  Unified entry point called every frame by WolfEngine.
+//  beginFrame and diagnostics live here; renderPass() supplies
+//  the path-specific frame content and flush strategy.
 // -------------------------------------------------------------
 void Renderer::render() {
-#if WE_DUAL_CORE_RENDER
-        xSemaphoreTake(m_bufferFree, portMAX_DELAY);
-        m_framebuffer = m_framebuffers[m_backBufIdx];
-        beginFrame();
-        executeWorldPass();
-        executeUIPass();
-        xSemaphoreGive(m_renderReady);
-#else
-        beginFrame();
-        executeAndFlush();
-#endif
+    auto t0 = WE_DiagBegin();
+    beginFrame();
+    renderPass();
+    m_renderDiag.renderTotalUs = WE_DiagElapsedUs(t0);
+    if (++m_diagFrameCount >= WE_DIAG_LOG_INTERVAL_FRAMES) {
+        WE_LOGI("DIAG", "renderTotal=%luus flush=%luus",
+            m_renderDiag.renderTotalUs,
+            m_renderDiag.flushUs);
+        m_diagFrameCount = 0;
+    }
 }

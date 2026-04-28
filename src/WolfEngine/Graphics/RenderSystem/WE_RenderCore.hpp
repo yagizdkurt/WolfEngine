@@ -29,6 +29,7 @@
 // =============== Engine Settings ================
 #include "WolfEngine/Settings/WE_Settings.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_DrawCommand.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Diagnostics.hpp"
 
 // =============== Driver Selection ================
 #include "WolfEngine/Drivers/DisplayDrivers/WE_Display_Driver.hpp"
@@ -53,11 +54,13 @@ public:
 
     bool submitDrawCommand(const DrawCommand& cmd);
     const FrameDiagnostics& getDiagnostics() const { return m_diagnostics; }
+    const RenderDiagnostics& getRenderDiagnostics() const { return m_renderDiag; }
 
 private:
     Renderer(DisplayDriver* driver) : m_driver(driver) { }
     void initialize();
     void render();
+    void renderPass();
     void beginFrame();
     void executeAndFlush();
     void executeWorldPass();
@@ -79,6 +82,9 @@ private:
     uint16_t         m_commandCount = 0;
     FrameDiagnostics m_diagnostics  = {};
 
+    RenderDiagnostics m_renderDiag     = {};
+    uint32_t          m_diagFrameCount = 0;
+
     #if WE_DUAL_CORE_RENDER
     // Two full framebuffers — 2 × 40,960 bytes = 81,920 bytes.
     // m_framebuffer always points to the current back buffer (updated in render()).
@@ -94,6 +100,7 @@ private:
 
     TaskHandle_t      m_displayTaskHandle     = nullptr;
     volatile bool     m_displayTaskShouldExit = false;
+    volatile uint32_t m_lastFlushUs = 0;
 
     static void displayTask_wrapper(void* param);
     void displayTask_impl();
