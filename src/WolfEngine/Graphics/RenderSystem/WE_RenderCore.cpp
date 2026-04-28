@@ -13,7 +13,34 @@ void Renderer::initialize() {
     WE_ASSERT(m_driver->screenWidth  == Settings.render.screenWidth &&
               m_driver->screenHeight == Settings.render.screenHeight,
               "Driver dimensions do not match Settings.render screen size");
+
+#if WE_DUAL_CORE_RENDER
+    initDualCore();
+#endif
 }
+
+
+#if WE_DUAL_CORE_RENDER
+void Renderer::initDualCore() {
+    m_framebuffer = m_framebuffers[0];
+
+    m_renderReady       = xSemaphoreCreateBinary();   // starts empty
+    m_bufferFree        = xSemaphoreCreateBinary();   // starts empty
+    m_displayTaskExited = xSemaphoreCreateBinary();   // starts empty
+
+    xSemaphoreGive(m_bufferFree);  // prime: first render() takes immediately
+
+    xTaskCreatePinnedToCore(
+        Renderer::displayTask_wrapper,
+        "WE_DispTask",
+        DISPLAY_TASK_STACK_SIZE,
+        this,
+        DISPLAY_TASK_PRIORITY,
+        &m_displayTaskHandle,
+        DISPLAY_TASK_CORE_ID
+    );
+}
+#endif
 
 
 // -------------------------------------------------------------
@@ -316,21 +343,20 @@ void Renderer::beginFrame() {
 
 
 // -------------------------------------------------------------
-//  executeAndFlush
-//  Two-pass render: world pass then UI pass. Each pass sorts,
-//  executes, updates peakCommandCount, and clears independently.
-//  Flush is always full-screen.
+//  executeWorldPass / executeUIPass
+//  Shared helpers: sort, execute, update peak, clear.
+//  Called by both the single-core and dual-core render paths.
 // -------------------------------------------------------------
-void Renderer::executeAndFlush() {
-    // --- World pass ---
+void Renderer::executeWorldPass() {
     sortCommands();
     executeCommands();
     m_diagnostics.peakCommandCount =
         (m_commandCount > m_diagnostics.peakCommandCount)
         ? m_commandCount : m_diagnostics.peakCommandCount;
     clearCommands();
+}
 
-    // --- UI pass ---
+void Renderer::executeUIPass() {
     UI().render();  // UI elements submit FillRect/Line/Circle/TextRun commands
     sortCommands();
     executeCommands();
@@ -338,8 +364,17 @@ void Renderer::executeAndFlush() {
         (m_commandCount > m_diagnostics.peakCommandCount)
         ? m_commandCount : m_diagnostics.peakCommandCount;
     clearCommands();
+}
 
-    // --- Flush: always full screen ---
+
+// -------------------------------------------------------------
+//  executeAndFlush
+//  Single-core orchestrator: world pass + UI pass + flush.
+//  Only called by the single-core render() path.
+// -------------------------------------------------------------
+void Renderer::executeAndFlush() {
+    executeWorldPass();
+    executeUIPass();
     m_driver->flush(m_framebuffer, 0, 0,
                     m_driver->screenWidth, m_driver->screenHeight);
 }
@@ -348,8 +383,18 @@ void Renderer::executeAndFlush() {
 // -------------------------------------------------------------
 //  render
 //  Master render function called every frame by WolfEngine.
+//  Two implementations selected at compile time.
 // -------------------------------------------------------------
 void Renderer::render() {
-    beginFrame();
-    executeAndFlush();
+#if WE_DUAL_CORE_RENDER
+        xSemaphoreTake(m_bufferFree, portMAX_DELAY);
+        m_framebuffer = m_framebuffers[m_backBufIdx];
+        beginFrame();
+        executeWorldPass();
+        executeUIPass();
+        xSemaphoreGive(m_renderReady);
+#else
+        beginFrame();
+        executeAndFlush();
+#endif
 }

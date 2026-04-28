@@ -1,29 +1,42 @@
 #pragma once
 #include "WE_ConfigTypes.hpp"
-
-// ── Display target selector ─────────────────────────────────────────────────
-// DISPLAY_SDL is injected by the desktop CMake build (-DDISPLAY_SDL).
-// The macro must remain defined here so WE_RenderCore.hpp can use it in
-// #if defined(DISPLAY_ST7735) for conditional driver #includes — that usage
-// cannot be replaced by an enum.
-#ifndef DISPLAY_SDL
-    #define DISPLAY_ST7735
-    #define RENDER_SCREEN_WIDTH  128
-    #define RENDER_SCREEN_HEIGHT 160
-#endif
+#include "WE_DisplaySelector.hpp"
 
 // ── Module Enables ───────────────────────────────────────────────────────────
 // Comment out a line to disable the corresponding engine module.
 // These macros gate both #include directives and static variable declarations
 // in WE_ModuleSystem.cpp — if constexpr cannot replace them.
-#define WE_MODULE_SAVELOAD
-//#define WE_MODULE_COLLISION
+// #define WE_MODULE_SAVELOAD
+// #define WE_MODULE_COLLISION
 
-// ── Radio ────────────────────────────────────────────────────────────────────
-// Set to 1 only if your project explicitly requires WiFi or Bluetooth.
-// When 0, radio components are excluded at the CMake level.
-// NOTE: NOT IMPLEMENTED YET - reserved for future use when radio features are added.
-#define WE_RADIO_ENABLED 0
+// ── Dual-Core Rendering ──────────────────────────────────────────────────────
+// When 1: Core 1 renders into the back buffer while Core 0 flushes the front
+// buffer to the ST7735 via DMA, overlapping both operations each frame.
+// When 0: single-core path — byte-for-byte identical to the baseline.
+// Auto-forced to 0 on desktop (ESP_PLATFORM absent — no FreeRTOS, no DMA).
+#ifdef ESP_PLATFORM
+    #define WE_DUAL_CORE_RENDER 0   // <-- user-editable
+#else
+    #define WE_DUAL_CORE_RENDER 0   // forced off; do not edit
+#endif
+
+#if WE_DUAL_CORE_RENDER
+    // Stack for the display task. 4096 bytes is safe: flush() calls
+    // xSemaphoreTake + esp_lcd_panel_draw_bitmap with shallow ESP-IDF stack depth.
+    #define DISPLAY_TASK_STACK_SIZE  4096
+
+    // Priority 5 puts the display task above typical user tasks (priority 1–3)
+    // but below FreeRTOS system tasks. Since it blocks on semaphores most of the
+    // time, it never burns CPU — it just needs to wake promptly when renderReady
+    // is given.
+    #define DISPLAY_TASK_PRIORITY    5
+
+    // Pin to Core 0 (PRO_CPU). The main app_main() and game loop run on Core 1
+    // (APP_CPU). WE_RADIO_ENABLED 0 means Core 0 carries no WiFi/BT load, so
+    // it is effectively idle between display task wakeups. Pinning here gives
+    // true hardware parallelism with Core 1's render pass.
+    #define DISPLAY_TASK_CORE_ID     0
+#endif
 
 /*
 ============================================================================================
@@ -50,8 +63,8 @@ inline constexpr EngineConfig Settings = {
 
     // ── Renderer ─────────────────────────────────────────────────────────────
     .render = {
-        .screenWidth             = RENDER_SCREEN_WIDTH,
-        .screenHeight            = RENDER_SCREEN_HEIGHT,
+        .screenWidth             = DISPLAY_TARGET.screenWidth,
+        .screenHeight            = DISPLAY_TARGET.screenHeight,
         // Maximum DrawCommands that can be submitted per frame. Tune based on peak sprite count.
         .maxDrawCommands         = 128,
         // Background color in RGB565 format. 0x0000 = Black, 0xFFFF = White.
@@ -62,12 +75,8 @@ inline constexpr EngineConfig Settings = {
         .cleanFramebufferEachFrame = true,
         // Target frame time in microseconds (1,000,000 / 30 = 33,333 us).
         .targetFrameTimeUs       = 33333,
-        // Display target — set automatically from the DISPLAY_SDL / DISPLAY_ST7735 macro above.
-#ifdef DISPLAY_SDL
-        .displayTarget           = DisplayTarget::SDL,
-#else
-        .displayTarget           = DisplayTarget::ST7735,
-#endif
+        // Display target — set automatically from the DisplaySelector.hpp definitions.
+        .displayTarget           = DISPLAY_TARGET.target,
     },
 
     // ── Input ────────────────────────────────────────────────────────────────

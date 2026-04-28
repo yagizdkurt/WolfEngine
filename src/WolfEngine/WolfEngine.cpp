@@ -2,6 +2,12 @@
 #include "esp_timer.h"
 #include "WolfEngine/Utilities/WE_I2C.hpp"
 
+void WolfEngine::Shutdown() {
+#if WE_DUAL_CORE_RENDER
+    m_renderer.renderShutDown();
+#endif
+}
+
 void WolfEngine::StartEngine() {
     // Driver initialization
     I2CManager::begin();
@@ -27,6 +33,9 @@ void WolfEngine::StartGame() {
 
     // Main game loop
     while (IsRunning()) gameLoop();
+
+    // Shutdown sequence
+    Shutdown();
 }
 
 void WolfEngine::gameLoop() {

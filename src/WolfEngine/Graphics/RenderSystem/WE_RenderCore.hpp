@@ -39,6 +39,12 @@
     #include "Display_SDL.h"
 #endif
 
+#if WE_DUAL_CORE_RENDER
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#endif
+
 class Renderer {
 public:
     uint16_t* getCanvas() { return m_framebuffer; }
@@ -50,17 +56,17 @@ public:
 
 private:
     Renderer(DisplayDriver* driver) : m_driver(driver) { }
-
     void initialize();
     void render();
-
     void beginFrame();
     void executeAndFlush();
+    void executeWorldPass();
+    void executeUIPass();
     void sortCommands();
     void executeCommands();
     void drawSpriteInternal(int16_t x, int16_t y, const uint8_t*  pixels,
         const uint16_t* palette, int width, int height, Rotation rotation);
-        
+
     void clearCommands();
     void drawFillRectInternal(int16_t x, int16_t y, uint8_t w, uint8_t h, uint16_t color);
     void drawLineInternal(int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
@@ -68,11 +74,34 @@ private:
     void drawTextRunInternal(int16_t x, int16_t y, const char* text, uint16_t color, uint8_t maxWidth);
 
     DisplayDriver* m_driver;
-    uint16_t m_framebuffer[Settings.render.screenWidth * Settings.render.screenHeight];
 
     DrawCommand      m_commandBuffer[Settings.render.maxDrawCommands];
     uint16_t         m_commandCount = 0;
     FrameDiagnostics m_diagnostics  = {};
+
+    #if WE_DUAL_CORE_RENDER
+    // Two full framebuffers — 2 × 40,960 bytes = 81,920 bytes.
+    // m_framebuffer always points to the current back buffer (updated in render()).
+    uint16_t  m_framebuffers[2][Settings.render.screenWidth * Settings.render.screenHeight];
+    uint16_t* m_framebuffer = nullptr;
+
+    int  m_backBufIdx  = 0;
+    int  m_frontBufIdx = 1;
+
+    SemaphoreHandle_t m_renderReady       = nullptr;
+    SemaphoreHandle_t m_bufferFree        = nullptr;
+    SemaphoreHandle_t m_displayTaskExited = nullptr;
+
+    TaskHandle_t      m_displayTaskHandle     = nullptr;
+    volatile bool     m_displayTaskShouldExit = false;
+
+    static void displayTask_wrapper(void* param);
+    void displayTask_impl();
+    void initDualCore();
+    void renderShutDown();
+#else
+    uint16_t m_framebuffer[Settings.render.screenWidth * Settings.render.screenHeight];
+#endif
 
     friend class WolfEngine;
 };

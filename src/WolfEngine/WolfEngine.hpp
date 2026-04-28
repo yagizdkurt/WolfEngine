@@ -73,6 +73,7 @@ private:
 
     void gameLoop();
     void gameTick();
+    void Shutdown();
 
     friend class GameObject;
 };

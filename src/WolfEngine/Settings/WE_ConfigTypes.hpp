@@ -79,6 +79,12 @@ struct RenderConfig {
     DisplayTarget displayTarget;
 };
 
+struct DisplayTargetConfig {
+    uint16_t screenWidth;
+    uint16_t screenHeight;
+    DisplayTarget target;
+};
+
 struct InputConfig {
     int debounceMs;
     int pollIntervalMs;
