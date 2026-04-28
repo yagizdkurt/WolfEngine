@@ -1,6 +1,6 @@
 #include "WolfEngine/InputSystem/WE_InputManager.hpp"
 #include "WolfEngine/InputSystem/WE_IInputProvider.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include "esp_timer.h"
 #include "driver/gpio.h"
 

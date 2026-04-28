@@ -1,5 +1,5 @@
 #include "WolfEngine/Utilities/WE_Timer.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 
 void Timer::start() {
     m_active    = true;

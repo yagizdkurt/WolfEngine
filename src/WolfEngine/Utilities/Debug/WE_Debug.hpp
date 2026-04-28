@@ -1,5 +1,7 @@
 #pragma once
-
+#ifdef ESP_PLATFORM
+#include "esp_timer.h"
+#endif
 #include <stdlib.h>
 
 // =============================================================
@@ -78,4 +80,12 @@ namespace WE_DEBUG {
     #define WE_LOGE(tag, fmt, ...) ((void)0)
     #define WE_ASSERT(condition, message) ((void)0)
     #define WE_PANIC(message) abort()
+#endif
+
+#if WE_DIAG_ENABLED
+inline uint64_t WE_DiagBegin() { return static_cast<uint64_t>(esp_timer_get_time()); }
+inline uint32_t WE_DiagElapsedUs(uint64_t start) { return static_cast<uint32_t>(esp_timer_get_time() - start); }
+#else
+inline uint64_t WE_DiagBegin()             { return 0; }
+inline uint32_t WE_DiagElapsedUs(uint64_t) { return 0; }
 #endif

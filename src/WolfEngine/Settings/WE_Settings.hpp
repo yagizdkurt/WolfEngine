@@ -38,6 +38,20 @@
     #define DISPLAY_TASK_CORE_ID     0
 #endif
 
+// ── Diagnostics ──────────────────────────────────────────────────────────────
+// Master switch. When 0, timing helpers are no-ops and logs compile away.
+// Automatically disabled when NDEBUG is defined (release builds).
+#if defined(WE_DIAG_ENABLED)
+    // already defined externally — respect it
+#elif defined(NDEBUG)
+    #define WE_DIAG_ENABLED 0
+#else
+    #define WE_DIAG_ENABLED 1
+#endif
+
+// Log diagnostics every N frames.
+#define WE_DIAG_LOG_INTERVAL_FRAMES 60
+
 /*
 ============================================================================================
  WOLF ENGINE SETTINGS

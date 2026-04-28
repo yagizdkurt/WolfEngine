@@ -2,7 +2,7 @@
 #include "WolfEngine/Utilities/WE_MathUtilities.hpp"
 #include "WolfEngine/GameObjectSystem/WE_GameObject.hpp"
 #include "WolfEngine/Graphics/RenderSystem/WE_Camera.hpp"
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include "WolfEngine/WolfEngine.hpp"
 
 SpriteRenderer::SpriteRenderer(GameObject* owner, const Sprite* sprite, RenderLayer layer)

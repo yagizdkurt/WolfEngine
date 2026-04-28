@@ -1,5 +1,5 @@
 #pragma once
-#include "WolfEngine/Utilities/WE_Debug.hpp"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 
 // =============================================================
 //  WolfEngine Color Palette System — Master Include & Documentation
