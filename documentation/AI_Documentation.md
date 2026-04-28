@@ -40,7 +40,18 @@ Project structure is in Structure.md file. Check it to understand project struct
 
 ---
 
-## 4. Architecture Style & Key Patterns
+## 4. Asset Pipeline
+
+For authoritative details on sprite/palette generation, build integration, and converter tools, see `documentation/asset_pipeline.md`. That document covers:
+- Palette generation (`tools/generate_palettes.py`)
+- Sprite conversion (`tools/asset_converter.py`)
+- CMake and PlatformIO build wiring
+- Directory layout and file formats
+- Python version requirements
+
+---
+
+## 5. Architecture Style & Key Patterns
 
 **Overall style:** Embedded layered monolith. Everything compiles into a single firmware
 image. There are no processes, no IPC, no network services.

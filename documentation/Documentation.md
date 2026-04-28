@@ -30,7 +30,20 @@ Repository structure is in Structure.md for convenience to maintainers. You can 
 
 ---
 
-## 4. Architecture Style & Key Patterns
+## 4. Asset Pipeline
+
+Sprite and palette asset generation is handled by an automated build-time pipeline. For complete details, see `documentation/asset_pipeline.md`. Key points:
+
+- **Palette generation:** `tools/generate_palettes.py` reads TOML files and outputs C++ headers.
+- **Sprite conversion:** `tools/asset_converter.py` reads PNG files and outputs sprite definitions.
+- Both stages run automatically before compilation on CMake and PlatformIO builds.
+- Generated files go to `src/GeneratedAssets/` and are re-created every build.
+
+For workflow, configuration format, error messages, and Python requirements, refer to the authoritative `asset_pipeline.md`.
+
+---
+
+## 5. Architecture Style & Key Patterns
 
 ### Design patterns in use
 
@@ -51,7 +64,7 @@ Repository structure is in Structure.md for convenience to maintainers. You can 
 
 ---
 
-## 5. Entry Points & Bootstrapping
+## 6. Entry Points & Bootstrapping
 
 ```
 app_main()
@@ -68,7 +81,7 @@ app_main()
 
 ---
 
-## 6. Core Modules & Responsibilities
+## 7. Core Modules & Responsibilities
 
 ### 6.1 WolfEngine
 

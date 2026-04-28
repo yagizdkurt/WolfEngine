@@ -31,6 +31,7 @@ nav:
   - Home: index.md
   - 🚀 Getting Started:
     - ⚙️ Installation & Setup: getting-started/installation-and-setup.md
+    - 📚 Engine Basics: getting-started/Engine-Basics.md
     - 🎮 First GameObject: getting-started/first-gameobject.md
   - 🔧 Core Systems:
     - 🏠 Engine: core-systems/engine.md
@@ -46,6 +47,7 @@ nav:
     - 🖼️ Sprite Renderer: gameobjects-and-components/sprite-renderer.md
     - 🎬 Animator: gameobjects-and-components/animator.md
   - 🎨 Graphics:
+    - 📦 Asset Pipeline: graphics/asset-pipeline.md
     - ⚡ Renderer: graphics/renderer.md
     - 🗂️ How To Setup Graphics: graphics/how-to-setup-graphics.md
     - 🎨 Palette: graphics/palette.md

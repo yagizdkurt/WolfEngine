@@ -2,6 +2,8 @@
 
 This page walks you through creating your first moving, visible game object from scratch in WolfEngine.
 
+If you want a quick overview of the folder layout, `main.cpp`, and the startup sequence before diving into code, see [Engine Basics](Engine-Basics.md).
+
 ---
 
 ## The Basics
