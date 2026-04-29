@@ -35,6 +35,8 @@ void WolfEngine::initializeDrivers() {
     }
     vTaskDelay(pdMS_TO_TICKS(50)); // bus must stabilize before first device access
     WE_LOGI("Boot", "I2C driver ready");
+    m_InputManager.HW_init(); // GPIO + ADC — no I2C dependency, safe here
+    vTaskDelay(pdMS_TO_TICKS(50));
 }
 
 void WolfEngine::initializeSubsystems() {
