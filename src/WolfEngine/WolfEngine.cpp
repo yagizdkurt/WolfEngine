@@ -9,6 +9,7 @@ void WolfEngine::Shutdown() {
 #if WE_DUAL_CORE_RENDER
     m_renderer.renderShutDown();
 #endif
+    I2CManager::end();
 }
 
 // =================== Initialization Steps ===================
