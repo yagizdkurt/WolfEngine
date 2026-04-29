@@ -17,8 +17,7 @@ void Renderer::displayTask_impl() {
         m_backBufIdx = m_frontBufIdx ^ 1;
 
         auto tf = WE_DiagBegin();
-        m_driver->flush(m_framebuffers[m_frontBufIdx],
-                        0, 0, m_driver->screenWidth, m_driver->screenHeight);
+        m_driver->flush(m_framebuffers[m_frontBufIdx], 0, 0, m_driver->screenWidth, m_driver->screenHeight);
         m_lastFlushUs = WE_DiagElapsedUs(tf);
 
         xSemaphoreGive(m_bufferFree);
@@ -43,7 +42,7 @@ void Renderer::initDualCore() {
 
     xSemaphoreGive(m_bufferFree); // Prime: allow the very first render() call to proceed without deadlock.
 
-    xTaskCreatePinnedToCore(Renderer::displayTask_wrapper,
+    BaseType_t taskResult = xTaskCreatePinnedToCore(Renderer::displayTask_wrapper,
         "WE_DispTask",
         DISPLAY_TASK_STACK_SIZE,
         this,
@@ -51,6 +50,11 @@ void Renderer::initDualCore() {
         &m_displayTaskHandle,
         DISPLAY_TASK_CORE_ID
     );
+
+    if (taskResult != pdPASS) {
+    WE_LOGE("Renderer", "Failed to create display task: %d", taskResult);
+    abort();
+    }
 }
 
 void Renderer::renderShutDown() {

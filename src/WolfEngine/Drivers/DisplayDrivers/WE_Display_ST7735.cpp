@@ -124,7 +124,11 @@ public:
         xSemaphoreTake(s_flushSem, portMAX_DELAY);
         uint16_t* buf = const_cast<uint16_t*>(framebuffer) + y1 * screenWidth + x1;
         esp_err_t ret = esp_lcd_panel_draw_bitmap(m_panel, x1, y1, x2, y2, buf);
-        if (ret != ESP_OK) { WE_LOGE(TAG, "draw_bitmap failed: %s", esp_err_to_name(ret)); }
+        if (ret != ESP_OK) { 
+            WE_LOGE(TAG, "draw_bitmap failed: %s", esp_err_to_name(ret)); 
+            xSemaphoreGive(s_flushSem); // Ensure semaphore is released on failure
+            return;
+        }
     }
 
     void sleep(bool enable) override {
