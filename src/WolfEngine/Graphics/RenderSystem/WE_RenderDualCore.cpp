@@ -10,15 +10,17 @@ void Renderer::displayTask_wrapper(void* param) {
 
 void Renderer::displayTask_impl() {
     while (true) {
-        xSemaphoreTake(m_renderReady, portMAX_DELAY);
+        if (xSemaphoreTake(m_renderReady, pdMS_TO_TICKS(500)) != pdTRUE) {
+            WE_LOGE("Renderer", "displayTask: renderReady timeout — render task stalled?");
+            continue;
+        }
         if (m_displayTaskShouldExit) break;
 
         m_frontBufIdx ^= 1;
         m_backBufIdx = m_frontBufIdx ^ 1;
 
         auto tf = WE_DiagBegin();
-        m_driver->flush(m_framebuffers[m_frontBufIdx],
-                        0, 0, m_driver->screenWidth, m_driver->screenHeight);
+        m_driver->flush(m_framebuffers[m_frontBufIdx], 0, 0, m_driver->screenWidth, m_driver->screenHeight);
         m_lastFlushUs = WE_DiagElapsedUs(tf);
 
         xSemaphoreGive(m_bufferFree);
@@ -28,8 +30,12 @@ void Renderer::displayTask_impl() {
 }
 
 void Renderer::renderPass() {
-    xSemaphoreTake(m_bufferFree, portMAX_DELAY);
+    if (xSemaphoreTake(m_bufferFree, pdMS_TO_TICKS(500)) != pdTRUE) {
+        WE_LOGE("Renderer", "renderPass: bufferFree timeout — display task stalled?");
+        return;
+    }
     m_framebuffer = m_framebuffers[m_backBufIdx];
+    beginFrame();
     executeWorldPass();
     executeUIPass();
     xSemaphoreGive(m_renderReady);
@@ -43,7 +49,7 @@ void Renderer::initDualCore() {
 
     xSemaphoreGive(m_bufferFree); // Prime: allow the very first render() call to proceed without deadlock.
 
-    xTaskCreatePinnedToCore(Renderer::displayTask_wrapper,
+    BaseType_t taskResult = xTaskCreatePinnedToCore(Renderer::displayTask_wrapper,
         "WE_DispTask",
         DISPLAY_TASK_STACK_SIZE,
         this,
@@ -51,6 +57,11 @@ void Renderer::initDualCore() {
         &m_displayTaskHandle,
         DISPLAY_TASK_CORE_ID
     );
+
+    if (taskResult != pdPASS) {
+    WE_LOGE("Renderer", "Failed to create display task: %d", taskResult);
+    abort();
+    }
 }
 
 void Renderer::renderShutDown() {

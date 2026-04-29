@@ -89,8 +89,7 @@ private:
     // Two full framebuffers — 2 × 40,960 bytes = 81,920 bytes.
     // m_framebuffer always points to the current back buffer (updated in render()).
     uint16_t  m_framebuffers[2][Settings.render.screenWidth * Settings.render.screenHeight];
-    uint16_t* m_framebuffer = nullptr;
-
+    uint16_t* m_framebuffer = m_framebuffers[0];
     int  m_backBufIdx  = 0;
     int  m_frontBufIdx = 1;
 

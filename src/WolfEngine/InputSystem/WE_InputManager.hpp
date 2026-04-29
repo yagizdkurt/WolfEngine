@@ -33,7 +33,8 @@ private:
     adc_oneshot_unit_handle_t m_adcHandle = nullptr;
     IInputProvider*           m_inputProvider = nullptr;
     bool                      m_alwaysEnableController0 = false;
-    void init();
+    void HW_init(); // GPIO + ADC peripheral setup — no I2C dependency
+    void init();    // Controller object init — requires I2C bus stable (PCF8574 access)
     void tick();
     friend class WolfEngine;
     InputManager() = default;

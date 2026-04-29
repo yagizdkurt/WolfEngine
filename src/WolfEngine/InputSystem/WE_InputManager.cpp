@@ -17,7 +17,7 @@ Controller* InputManager::getController(int index) {
     return &m_controllers[index];
 }
 
-void InputManager::init() {
+void InputManager::HW_init() {
 
     // ── GPIO setup for all enabled controllers ────────────────
     uint64_t pinMask = 0;
@@ -77,8 +77,12 @@ void InputManager::init() {
                 adc_oneshot_config_channel(m_adcHandle, Settings.input.controllers[c].joyYChannel, &chanCfg);
         }
     }
+}
+
+void InputManager::init() {
 
     // ── Init each enabled controller ──────────────────────────
+    // Requires I2C bus to be stable (PCF8574 device access).
     int64_t now = esp_timer_get_time();
     for (int c = 0; c < MAX_CONTROLLERS; c++) {
         if (!Settings.input.controllers[c].enabled) continue;

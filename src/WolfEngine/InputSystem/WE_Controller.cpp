@@ -1,6 +1,7 @@
 #include "WolfEngine/InputSystem/WE_Controller.hpp"
 #include "driver/gpio.h"
 #include "esp_timer.h"
+#include "WolfEngine/Utilities/Debug/WE_Debug.hpp"
 #include <new>
 
 // ─────────────────────────────────────────────────────────────
@@ -50,7 +51,14 @@ void Controller::init(const ControllerSettings& settings, adc_oneshot_unit_handl
                 break;
         }
 
-        if (m_expander) m_expander->begin();
+        if (m_expander) {
+            esp_err_t expanderErr = m_expander->begin();
+            if (expanderErr != ESP_OK)
+                WE_LOGE("Controller", "Expander begin() failed (addr=0x%02X): %s",
+                        (uint8_t)m_settings->expander.addr, esp_err_to_name(expanderErr));
+            else
+                WE_LOGI("Controller", "Expander ready at 0x%02X", (uint8_t)m_settings->expander.addr);
+        }
     }
 
     // ── Debounce timestamps ───────────────────────────────────
@@ -78,13 +86,13 @@ void Controller::tick(int64_t now, int64_t debounceUs) {
     }
 
     // ── Joystick ──────────────────────────────────────────────
-    if (m_settings->joyXEnabled && m_adcHandle) {
+    if (m_settings && m_settings->joyXEnabled && m_adcHandle) {
         int raw = 0;
         adc_oneshot_read(m_adcHandle, m_settings->joyXChannel, &raw);
         m_axisX = normalizeAxis(raw, m_settings->joyXCenter, m_settings->joyXMin, m_settings->joyXMax);
     }
 
-    if (m_settings->joyYEnabled && m_adcHandle) {
+    if (m_settings && m_settings->joyYEnabled && m_adcHandle) {
         int raw = 0;
         adc_oneshot_read(m_adcHandle, m_settings->joyYChannel, &raw);
         m_axisY = normalizeAxis(raw, m_settings->joyYCenter, m_settings->joyYMin, m_settings->joyYMax);
@@ -97,6 +105,11 @@ void Controller::tick(int64_t now, int64_t debounceUs) {
 
 bool Controller::readRaw(Button btn) const {
     int idx = static_cast<int>(btn);
+
+    // Safety: validate button index and that settings are initialized
+    if (idx < 0 || idx >= Settings.input.buttonCount || !m_settings) {
+        return false;
+    }
 
     // GPIO takes priority over expander
     if (m_settings->gpioPins[idx] != -1) {
@@ -119,6 +132,9 @@ bool Controller::readRaw(Button btn) const {
 // ─────────────────────────────────────────────────────────────
 
 float Controller::normalizeAxis(int raw, int centre, int minVal, int maxVal) const {
+    // Safety: validate settings are initialized
+    if (!m_settings) return 0.0f;
+
     float normalized;
 
     if (raw >= centre) {
@@ -143,16 +159,20 @@ float Controller::normalizeAxis(int raw, int centre, int minVal, int maxVal) con
 // ─────────────────────────────────────────────────────────────
 
 bool Controller::getButton(Button btn) const {
-    return m_currState[static_cast<int>(btn)];
+    int i = static_cast<int>(btn);
+    if (i < 0 || i >= Settings.input.buttonCount) return false;
+    return m_currState[i];
 }
 
 bool Controller::getButtonDown(Button btn) const {
     int i = static_cast<int>(btn);
+    if (i < 0 || i >= Settings.input.buttonCount) return false;
     return m_currState[i] && !m_prevState[i];
 }
 
 bool Controller::getButtonUp(Button btn) const {
     int i = static_cast<int>(btn);
+    if (i < 0 || i >= Settings.input.buttonCount) return false;
     return !m_currState[i] && m_prevState[i];
 }
 
@@ -162,6 +182,7 @@ float Controller::getAxis(JoyAxis axis) const {
 
 void Controller::simulateButton(Button btn, bool pressed) {
     int i = static_cast<int>(btn);
+    if (i < 0 || i >= Settings.input.buttonCount) return;
     m_prevState[i] = m_currState[i];
     m_currState[i] = pressed;
 }
