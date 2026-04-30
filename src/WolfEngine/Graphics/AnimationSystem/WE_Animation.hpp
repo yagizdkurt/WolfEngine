@@ -10,8 +10,8 @@
 //      animator.setAnimation(&Assets::WALK);
 // =============================================================
 struct WE_AnimationRaw {
-    const Sprite** sprites;    // doesnt need sprite count because the sequence is terminated by 0xFF
-    const uint8_t* sequence;   // terminated by 0xFF
+    const Sprite* const* sprites;  // doesnt need sprite count because the sequence is terminated by 0xFF
+    const uint8_t* sequence;       // terminated by 0xFF
 };
 
 struct WE_Animation {

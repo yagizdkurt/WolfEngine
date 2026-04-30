@@ -54,6 +54,7 @@ Images/**
 !Images/assets.toml
 
 # then exclude build and game specific sources...
+Documentation/private
 desktop/build/
 src/GameCode/**
 
