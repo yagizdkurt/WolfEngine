@@ -4,7 +4,7 @@ import subprocess, time, os, sys
 
 WATCH_EXTENSIONS = ('.png', '.bmp', '.gif', '.toml', '.json')
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONVERTER = os.path.join(_ROOT, 'run_asset_converter.py')
+CONVERTER = os.path.join(_ROOT, 'tools', 'run_asset_converter.py')
 
 class Handler(FileSystemEventHandler):
     def on_any_event(self, event):
@@ -14,10 +14,8 @@ class Handler(FileSystemEventHandler):
             print(f"[watcher] change detected: {event.src_path}")
             subprocess.run([sys.executable, CONVERTER])
 
-if __name__ == '__main__':
-    watch_paths = [
-        os.path.join(_ROOT, 'Images'),
-    ]
+def start_watcher():
+    watch_paths = [os.path.join(_ROOT, 'Images')]
     obs = Observer()
     for p in watch_paths:
         if os.path.isdir(p):
@@ -30,3 +28,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         obs.stop()
     obs.join()
+
+if __name__ == '__main__':
+    start_watcher()
