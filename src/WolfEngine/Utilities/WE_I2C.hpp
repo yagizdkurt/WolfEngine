@@ -52,6 +52,16 @@ public:
     // Should not be called in production/release builds.
     static void scan();
 
+    // Logs bus state to serial: SDA/SCL pin levels, driver install state.
+    // Call after begin() to confirm the bus is healthy before using devices.
+    static void diagBusState();
+
+// Set to 1 to log every I2C transaction (addr, direction, length, result).
+// Significant serial output — enable only when diagnosing bus issues.
+#ifndef WE_I2C_DEBUG_VERBOSE
+    #define WE_I2C_DEBUG_VERBOSE 1
+#endif
+
 private:
     friend class WolfEngine;
     static esp_err_t begin();

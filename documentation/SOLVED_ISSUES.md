@@ -31,6 +31,22 @@ note: Phases are just for SDL integration fixes. Dont use phases for normal engi
 
 -----------------------------------------------------------------------------------------
 
+## I2C Bus Timeout — PCF8574 Expander Not Responding (ESP_ERR_TIMEOUT)
+RESOLVED in - 01.05.26
+**Location:** Hardware wiring — SDA (GPIO 21) / SCL (GPIO 22); `src/WolfEngine/Utilities/WE_I2C.hpp` — `FREQ_HZ`
+**What it did:** Every I2C write to the PCF8574 at 0x20 returned `ESP_ERR_TIMEOUT`. The I2C driver initialized successfully (no abort), but `I2CManager::scan()` found zero devices on the bus — nothing at any address responded. The expander `begin()` failed immediately on boot and continued failing on every controller poll.
+**Resolution:** Added external **2kΩ pull-up resistors** from SDA to 3.3V and from SCL to 3.3V. No code changes were required.
+
+Root cause: at 400kHz (`FREQ_HZ = 400000`) the clock half-period is 1.25μs. The ESP32 internal pull-ups are ~45kΩ. With typical wire/breadboard capacitance (~100pF) the RC rise time constant is `45kΩ × 100pF = 4.5μs` — more than three times the half-period. SDA and SCL never reached logic-high before the next clock edge, so the bus was effectively always-low and no device could ACK any address probe.
+
+**Extra Notes**
+- The symptom that distinguishes this from an address mismatch or missing device: `scan()` finds **zero devices** at any address. An address mismatch would still find the device at the correct address; a dead pull-up makes every probe time out.
+- `ESP_ERR_TIMEOUT` (not `ESP_FAIL`) on the write confirms the bus never ACK'd — `ESP_FAIL` would mean a device answered and NACKed.
+- If external resistors are not available, dropping `FREQ_HZ` to `100000` (100kHz) in `WE_I2C.hpp` is a marginal software-only fallback: half-period becomes 5μs which barely fits the 4.5μs rise time. Any extra wire capacitance will push it over again, so external pull-ups remain the correct fix.
+- Recommended values: **2.2kΩ at 400kHz**, **4.7kΩ at 100kHz**, both to 3.3V.
+
+---
+
 ## I2C ISR Fires During Driver Install
 RESOLVED in - 29.04.26
 **Location:** `src/WolfEngine/WolfEngine.cpp` — `initializeDrivers()` / `initializeSubsystems()`
