@@ -7,11 +7,11 @@
 !README.md
 !platformio.ini
 !cxx_only_flags.py
-!run_asset_converter.py
 !mkdocs.yml
 !Contributing.md
 !CmakeLists.txt
 !sdkconfig.defaults
+!WEAP.py
 
 # And project folders...
 !IconsPhotosEtc/
@@ -30,6 +30,8 @@
 # And some special Rules for Tools folder...
 !tools/
 !tools/**
+**/__pycache__/
+**/*.pyc
 tools/palettes/**
 !tools/palettes/coolData.toml
 !tools/palettes/gameboyData.toml
@@ -52,6 +54,7 @@ Images/**
 !Images/assets.toml
 
 # then exclude build and game specific sources...
+Documentation/private
 desktop/build/
 src/GameCode/**
 

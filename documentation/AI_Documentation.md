@@ -48,6 +48,7 @@ For authoritative details on sprite/palette generation, build integration, and c
 - CMake and PlatformIO build wiring
 - Directory layout and file formats
 - Python version requirements
+ - GIF → animation conversion (`tools/asset_converter.py`) — emits `WE_AnimationRaw` assets; runtime `WE_Animation` wrappers hold playback params
 
 ---
 
@@ -219,10 +220,10 @@ Controller* getController(int i);        // 0–3; returns nullptr if disabled
 void setInputProvider(IInputProvider* provider);  // nullptr = hardware GPIO/ADC path
 void setAlwaysEnableController0(bool value);      // bypass enabled check for controller 0
 
-// On Controller:
-bool getButton(Button b);       // held
-bool getButtonDown(Button b);   // pressed this frame
-bool getButtonUp(Button b);     // released this frame
+// On Controller (compile-time template getters):
+template<Button::B> bool getButton();       // held
+template<Button::B> bool getButtonDown();   // pressed this frame
+template<Button::B> bool getButtonUp();     // released this frame
 float getAxis(JoyAxis a);       // -1.0 to 1.0
 ```
 

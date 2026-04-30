@@ -247,6 +247,34 @@ def gif_named_palette_convert(frames: list, palette_rgb: list):
     return all_indices_2d
 
 
+def deduplicate_frames(all_indices_2d: list):
+    """
+    Returns (unique_frames, seq) where:
+      unique_frames — list of unique indices_2d (one entry per distinct bitmap)
+      seq           — per-original-frame index into unique_frames
+    Comparison is byte-for-byte (full memcmp equivalent).
+    """
+    unique_frames = []
+    unique_flat = []
+    seq = []
+
+    for indices_2d in all_indices_2d:
+        flat = bytes(pixel for row in indices_2d for pixel in row)
+        found = -1
+        for i, existing in enumerate(unique_flat):
+            if flat == existing:
+                found = i
+                break
+        if found >= 0:
+            seq.append(found)
+        else:
+            seq.append(len(unique_frames))
+            unique_frames.append(indices_2d)
+            unique_flat.append(flat)
+
+    return unique_frames, seq
+
+
 # ---------------------------------------------------------------------------
 # Code generation
 # ---------------------------------------------------------------------------
@@ -286,6 +314,7 @@ def emit_auto_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
     content = (
         f"// AUTO-GENERATED — do not edit\n"
         f"// Source: {source_rel}  [{w}W x {h}H]\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"\n"
         f"{pixel_block}\n"
@@ -309,6 +338,7 @@ def emit_named_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
     content = (
         f"// AUTO-GENERATED — do not edit\n"
         f"// Source: {source_rel}  [{w}W x {h}H]  palette: {palette_name}\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"#include \"{include_path}\"\n"
         f"\n"
@@ -324,30 +354,43 @@ def emit_named_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
 
 def emit_auto_gif_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
                       all_indices_2d: list, palette565: list, w: int, h: int):
-    n = len(all_indices_2d)
+    n_frames = len(all_indices_2d)
+    unique_frames, seq = deduplicate_frames(all_indices_2d)
+    n_unique = len(unique_frames)
+
     palette_block = render_auto_palette_array(stem, palette565)
     frame_blocks = '\n\n'.join(
-        render_frame_array(stem, i, all_indices_2d[i], w, h)
-        for i in range(n)
+        render_frame_array(stem, i, unique_frames[i], w, h)
+        for i in range(n_unique)
     )
-    frames_array_lines = [f"static constexpr Sprite s_{stem}_frames[{n}] = {{"]
-    for i in range(n):
-        frames_array_lines.append(f"    Sprite::Create(s_{stem}_f{i}, s_{stem}_palette),")
-    frames_array_lines.append("};")
-    frames_array = '\n'.join(frames_array_lines)
+
+    sprite_block = '\n'.join(
+        f"static constexpr Sprite s_{stem}_spr_{i} = Sprite::Create(s_{stem}_f{i}, s_{stem}_palette);"
+        for i in range(n_unique)
+    )
+
+    sprites_inner = ', '.join(f"&s_{stem}_spr_{i}" for i in range(n_unique))
+    sprites_array = f"static constexpr const Sprite* s_{stem}_sprites[{n_unique}] = {{ {sprites_inner} }};"
+
+    seq_inner = ', '.join(str(i) for i in seq) + ', 0xFF'
+    seq_array = f"static constexpr uint8_t s_{stem}_seq[] = {{ {seq_inner} }};"
 
     content = (
         f"// AUTO-GENERATED — do not edit\n"
-        f"// Source: {source_rel}  [{w}W x {h}H]  {n} frames\n"
+        f"// Source: {source_rel}  [{w}W x {h}H]  {n_frames} frames  {n_unique} unique\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"\n"
         f"{palette_block}\n"
         f"\n"
         f"{frame_blocks}\n"
         f"\n"
-        f"{frames_array}\n"
+        f"{sprite_block}\n"
         f"\n"
-        f"constexpr WE_Animation Assets::{symbol} = {{ s_{stem}_frames, {n} }};\n"
+        f"{sprites_array}\n"
+        f"{seq_array}\n"
+        f"\n"
+        f"constexpr WE_AnimationRaw Assets::{symbol} = {{ s_{stem}_sprites, s_{stem}_seq }};\n"
     )
 
     out_path = pathlib.Path(output_dir) / f"{stem}.cpp"
@@ -358,29 +401,42 @@ def emit_auto_gif_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
 def emit_named_gif_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
                        all_indices_2d: list, w: int, h: int,
                        palette_name: str, palette_header: str):
-    n = len(all_indices_2d)
+    n_frames = len(all_indices_2d)
+    unique_frames, seq = deduplicate_frames(all_indices_2d)
+    n_unique = len(unique_frames)
+
     include_path = f"WolfEngine/Graphics/ColorPalettes/{palette_header}"
     frame_blocks = '\n\n'.join(
-        render_frame_array(stem, i, all_indices_2d[i], w, h)
-        for i in range(n)
+        render_frame_array(stem, i, unique_frames[i], w, h)
+        for i in range(n_unique)
     )
-    frames_array_lines = [f"static constexpr Sprite s_{stem}_frames[{n}] = {{"]
-    for i in range(n):
-        frames_array_lines.append(f"    Sprite::Create(s_{stem}_f{i}, {palette_name}),")
-    frames_array_lines.append("};")
-    frames_array = '\n'.join(frames_array_lines)
+
+    sprite_block = '\n'.join(
+        f"static constexpr Sprite s_{stem}_spr_{i} = Sprite::Create(s_{stem}_f{i}, {palette_name});"
+        for i in range(n_unique)
+    )
+
+    sprites_inner = ', '.join(f"&s_{stem}_spr_{i}" for i in range(n_unique))
+    sprites_array = f"static constexpr const Sprite* s_{stem}_sprites[{n_unique}] = {{ {sprites_inner} }};"
+
+    seq_inner = ', '.join(str(i) for i in seq) + ', 0xFF'
+    seq_array = f"static constexpr uint8_t s_{stem}_seq[] = {{ {seq_inner} }};"
 
     content = (
         f"// AUTO-GENERATED — do not edit\n"
-        f"// Source: {source_rel}  [{w}W x {h}H]  {n} frames  palette: {palette_name}\n"
+        f"// Source: {source_rel}  [{w}W x {h}H]  {n_frames} frames  {n_unique} unique  palette: {palette_name}\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"#include \"{include_path}\"\n"
         f"\n"
         f"{frame_blocks}\n"
         f"\n"
-        f"{frames_array}\n"
+        f"{sprite_block}\n"
         f"\n"
-        f"constexpr WE_Animation Assets::{symbol} = {{ s_{stem}_frames, {n} }};\n"
+        f"{sprites_array}\n"
+        f"{seq_array}\n"
+        f"\n"
+        f"constexpr WE_AnimationRaw Assets::{symbol} = {{ s_{stem}_sprites, s_{stem}_seq }};\n"
     )
 
     out_path = pathlib.Path(output_dir) / f"{stem}.cpp"
@@ -393,13 +449,14 @@ def emit_assets_header(output_dir: str, sprite_symbols: list, anim_symbols: list
         "// AUTO-GENERATED — do not edit",
         "#pragma once",
         "#include \"WolfEngine/Graphics/SpriteSystem/WE_Sprite.hpp\"",
+        "#include \"WolfEngine/Graphics/AnimationSystem/WE_Animation.hpp\"",
         "",
         "namespace Assets {",
     ]
     for sym in sprite_symbols:
         lines.append(f"    extern const Sprite {sym};")
     for sym in anim_symbols:
-        lines.append(f"    extern const WE_Animation {sym};")
+        lines.append(f"    extern const WE_AnimationRaw {sym};")
     lines.append("}")
     lines.append("")
 

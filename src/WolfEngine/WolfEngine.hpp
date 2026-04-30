@@ -28,6 +28,9 @@
 #include "WolfEngine/Graphics/UserInterface/WE_UIManager.hpp"
 #include "WolfEngine/Graphics/ColorPalettes/WE_Palettes.hpp"
 
+// ======= For User Quality Of Life ========
+#include "GeneratedAssets/WE_Assets.hpp"
+
 
 class WolfEngine final {
 public:

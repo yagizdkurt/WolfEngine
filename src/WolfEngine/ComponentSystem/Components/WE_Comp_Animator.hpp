@@ -1,72 +1,102 @@
 #pragma once
 #include <stdint.h>
 #include "WolfEngine/Graphics/SpriteSystem/WE_Sprite.hpp"
+#include "WolfEngine/Graphics/AnimationSystem/WE_Animation.hpp"
 #include "WE_Comp_SpriteRenderer.hpp"
 #include "WE_BaseComp.hpp"
-#include "WolfEngine/Graphics/SpriteSystem/WE_Sprite.hpp"
 
 
-// =============================================================
-//  WE_Comp_Animator.hpp DEPRECATED NEEDS UPDATING
-//  The Animator component drives a SpriteRenderer by cycling
-//  through an Animation's Sprite frames automatically.
-//
-//  It holds a pointer to the SpriteRenderer it controls and
-//  advances frames based on a configurable frame duration.
-//  The engine ticks the animator every frame — no manual
-//  tick() call needed in Update().
-//
-//  USAGE:
-//      constexpr uint8_t walkPixels0[7][7] = { ... };
-//      constexpr uint8_t walkPixels1[7][7] = { ... };
-//      constexpr uint8_t walkPixels2[7][7] = { ... };
-//      constexpr uint8_t walkPixels3[7][7] = { ... };
-//
-//      constexpr Sprite WALK_FRAMES[] = {
-//          Sprite::Create(walkPixels0, PALETTE_WARM),
-//          Sprite::Create(walkPixels1, PALETTE_WARM),
-//          Sprite::Create(walkPixels2, PALETTE_WARM),
-//          Sprite::Create(walkPixels3, PALETTE_WARM),
-//      };
-//
-//      constexpr Animation WALK = Animation::Create(WALK_FRAMES);
-//
-//      class Player : public GameObject {
-//      public:
-//          SpriteRenderer spriteRenderer = SpriteRenderer(this, &WALK_FRAMES[0], LAYER_PLAYER);
-//          Animator       animator       = Animator(&spriteRenderer, &WALK, 8);
-//      };
-// =============================================================
-
+/**
+ * # Animator  Component
+ *
+ * Drives sprite frames by sampling animation sequences each tick.
+ *
+ * Runs during the engine tick phase and mutates the owned `SpriteRenderer`'s
+ * sprite pointer based on the current animation frame. Consumes a `WE_Animation`
+ * runtime wrapper (tagline, frame duration, loop flag) and the underlying
+ * `WE_AnimationRaw` asset (frame sequence and sprite indices).
+ *
+ * Supports playback control: pause/resume, seek to frame, swap animation,
+ * and override frame duration per instance. Distinguishes looping and
+ * non-looping animations; signals completion via `isFinished()`.
+ *
+ * ### Example Usage:
+ *
+ * ~~~cpp
+ * Animator animator(&spriteRenderer, &Assets::PLAYER_WALK);
+ * animator.setFrameDuration(6);
+ * ~~~
+ *
+ * ### Notes:
+ * - Requires a `SpriteRenderer` component on the owner GameObject.
+ * - Runs during ticks; pause() stops frame advancement but keeps sprite visible.
+ */
 class Animator : public Component {
-public:
-    // owner          — pointer to the SpriteRenderer this animator controls
-    // frames         — array of Sprite assets representing animation frames
-    // frameCount     — number of frames in the array
-    // frameDuration  — how many game ticks each frame is shown for
-    Animator(SpriteRenderer* owner, const WE_Animation* animation, uint8_t frameDuration = 8);
+ public:
+    /** ## Constructs an Animator attached to a SpriteRenderer and sets initial frame.
+     *
+     *  @param owner  Pointer to the `SpriteRenderer` this component drives; non-owning.
+     *  @param animation  Pointer to a `WE_Animation` wrapper; non-owning, may be null.
+     */
+     Animator(SpriteRenderer* owner, const WE_Animation* animation);
 
-    void setFrame(uint8_t frame); // Jump to a specific frame immediately
+    /** ## Immediately jump to a specific position in the animation sequence.
+     *
+     *  Resets the internal tick counter so the frame persists for a full frame duration.
+     *
+     *  @param frame  Zero-based sequence index; out-of-range calls are ignored.
+     */
+     void setFrame(uint8_t frame);
 
-    void setAnimation(const WE_Animation* animation); // Change the entire animation
+    /** ## Swaps the active animation and resets playback to frame 0.
+     *
+     *  @param animation  Pointer to a `WE_Animation` wrapper; non-owning, may be null.
+     */
+     void setAnimation(const WE_Animation* animation);
 
-    // Change how many ticks each frame is shown for
-    void setFrameDuration(uint8_t duration) { m_frameDuration = duration; }
+    /** ## Overrides the frame duration for this instance only.
+     *
+     *  @param duration  Ticks per frame; must be > 0.
+     */
+     void setFrameDuration(uint8_t duration) { m_frameDuration = duration; }
 
-    uint8_t getCurrentFrame() const { return m_currentFrame; }
+    /** ## Returns the current sequence position (frame index) being displayed.
+     *
+     *  @return Zero-based index within the active animation sequence.
+     */
+     uint8_t getCurrentFrame() const { return m_currentFrame; }
 
-    void pause()          { m_paused =  true;  }
-    void resume()         { m_paused = false;  }
-    bool isPaused() const { return  m_paused;  }
+    /** ## Pauses playback; tick() will not advance frames while paused.
+     */
+     void pause()          { m_paused =  true;  }
+
+    /** ## Resumes playback after pause().
+     */
+     void resume()         { m_paused = false;  }
+
+    /** ## Returns whether playback is currently paused.
+     *
+     *  @return True if paused, false otherwise.
+     */
+     bool isPaused() const { return  m_paused;  }
+
+    /** ## Returns true if a non-looping animation has completed.
+     *
+     *  Always false for looping animations. Resets when setAnimation() or setFrame() is called.
+     *
+     *  @return True if non-looping animation has exhausted its sequence.
+     */
+     bool isFinished() const { return m_finished; }
 
 private:
-    void tick() override; 
+    void tick() override;
 
-    SpriteRenderer* m_mySpriteRenderer;
-    const Sprite*   m_frames;
-    uint8_t         m_frameCount;
-    uint8_t         m_frameDuration;
-    uint8_t         m_currentFrame = 0;
-    uint8_t         m_tickCounter  = 0;
-    bool            m_paused       = false;
+    SpriteRenderer*       m_mySpriteRenderer;
+    const WE_AnimationRaw* m_raw;
+    uint8_t               m_frameDuration;
+    bool                  m_looping;
+    uint8_t               m_currentFrame = 0;
+    uint8_t               m_tickCounter  = 0;
+    bool                  m_paused       = false;
+    bool                  m_finished     = false;
 };

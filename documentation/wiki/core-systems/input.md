@@ -16,7 +16,7 @@ void Start() override {
 }
 
 void Update() override {
-    if (controller && controller->getButtonDown(Button::A)) {
+    if (controller && controller->getButtonDown<Button::A>()) {
         // do something
     }
 }
@@ -39,8 +39,8 @@ Controller* p2 = Input().getController(1); // player 2
 
 ```cpp
 Controller* p2 = Input().getController(1);
-if (p2) {
-    p2->getButtonDown(Button::A);
+    if (p2) {
+    p2->getButtonDown<Button::A>();
 }
 ```
 
@@ -71,26 +71,26 @@ Each button can be wired to a direct GPIO pin, an expander pin, or left unassign
 
 ## Button Queries
 
-### `getButton(Button btn)`
+### `getButton<Button::B>()`
 Returns `true` every frame the button is held down.
 ```cpp
-if (controller && controller->getButton(Button::B)) {
+if (controller && controller->getButton<Button::B>()) {
     player.accelerate();
 }
 ```
 
-### `getButtonDown(Button btn)`
+### `getButtonDown<Button::B>()`
 Returns `true` only on the single frame the button is first pressed. Use this for one-shot actions.
 ```cpp
-if (controller && controller->getButtonDown(Button::A)) {
+if (controller && controller->getButtonDown<Button::A>()) {
     player.jump();
 }
 ```
 
-### `getButtonUp(Button btn)`
+### `getButtonUp<Button::B>()`
 Returns `true` only on the single frame the button is released.
 ```cpp
-if (controller && controller->getButtonUp(Button::A)) {
+if (controller && controller->getButtonUp<Button::A>()) {
     player.stopCharging();
 }
 ```
