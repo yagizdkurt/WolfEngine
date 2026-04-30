@@ -94,8 +94,8 @@ public:
     }
 
     void Update() override {
-        if (Input().getButton(Button::A)) transform.position.x += 1;
-        if (Input().getButton(Button::B)) transform.position.x -= 1;
+        if (Input().getButton<Button::A>()) transform.position.x += 1;
+        if (Input().getButton<Button::B>()) transform.position.x -= 1;
     }
 };
 ```

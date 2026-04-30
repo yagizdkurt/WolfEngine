@@ -158,24 +158,6 @@ float Controller::normalizeAxis(int raw, int centre, int minVal, int maxVal) con
 //  Public query methods
 // ─────────────────────────────────────────────────────────────
 
-bool Controller::getButton(Button btn) const {
-    int i = static_cast<int>(btn);
-    if (i < 0 || i >= Settings.input.buttonCount) return false;
-    return m_currState[i];
-}
-
-bool Controller::getButtonDown(Button btn) const {
-    int i = static_cast<int>(btn);
-    if (i < 0 || i >= Settings.input.buttonCount) return false;
-    return m_currState[i] && !m_prevState[i];
-}
-
-bool Controller::getButtonUp(Button btn) const {
-    int i = static_cast<int>(btn);
-    if (i < 0 || i >= Settings.input.buttonCount) return false;
-    return !m_currState[i] && m_prevState[i];
-}
-
 float Controller::getAxis(JoyAxis axis) const {
     return (axis == JoyAxis::X) ? m_axisX : m_axisY;
 }

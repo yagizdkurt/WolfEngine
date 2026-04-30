@@ -268,10 +268,10 @@ different I²C expander chips, analog joystick via ADC) behind a uniform button/
 WEInputManager& Input();                 // global accessor
 WEController& getController(uint8_t i);  // 0–3
 
-// On WEController:
-bool getButton(Button b);       // held
-bool getButtonDown(Button b);   // pressed this frame
-bool getButtonUp(Button b);     // released this frame
+// On WEController (compile-time template getters):
+template<Button::B> bool getButton();       // held
+template<Button::B> bool getButtonDown();   // pressed this frame
+template<Button::B> bool getButtonUp();     // released this frame
 float getAxis(Axis a);          // -1.0 to 1.0
 ```
 
@@ -630,7 +630,7 @@ When you add/remove/reorder fields in a save struct, increment `WE_SAVE_VERSION`
    getButtonUp()   = bit set in prev AND NOT current
 
 4. In GameObject::Update() (user code):
-   if (Input().getController(0).getButtonDown(Button::A)) {
+      if (Input().getController(0).getButtonDown<Button::A>()) {
        // fire weapon, jump, etc.
    }
 

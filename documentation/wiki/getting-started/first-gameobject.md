@@ -53,10 +53,10 @@ public:
 
     void Update() override {
         if (!controller) return;
-        if (controller->getButton(Button::A)) transform.position.x += 1;
-        if (controller->getButton(Button::B)) transform.position.x -= 1;
-        if (controller->getButton(Button::C)) transform.position.y -= 1;
-        if (controller->getButton(Button::D)) transform.position.y += 1;
+        if (controller->getButton<Button::A>()) transform.position.x += 1;
+        if (controller->getButton<Button::B>()) transform.position.x -= 1;
+        if (controller->getButton<Button::C>()) transform.position.y -= 1;
+        if (controller->getButton<Button::D>()) transform.position.y += 1;
     }
 };
 ```
@@ -108,8 +108,8 @@ public:
 
     void Update() override {
         if (!controller) return;
-        if (controller->getButton(Button::A)) transform.position.x += 1;
-        if (controller->getButton(Button::B)) transform.position.x -= 1;
+        if (controller->getButton<Button::A>()) transform.position.x += 1;
+        if (controller->getButton<Button::B>()) transform.position.x -= 1;
     }
 };
 ```
