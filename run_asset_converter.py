@@ -1,21 +1,32 @@
-Import("env")
+try:
+    Import("env")
+    _pio_mode = True
+except NameError:
+    _pio_mode = False
 
 import os
 import subprocess
 import sys
 
-project_dir = env.subst("$PROJECT_DIR")
+if _pio_mode:
+    project_dir = env.subst("$PROJECT_DIR")
+else:
+    project_dir = os.path.dirname(os.path.abspath(__file__))
+
 python = sys.executable
 
-# Ensure Pillow is available in this Python environment.
-# PlatformIO runs scripts in its own venv, which may not have Pillow.
+# Ensure required packages are available in this Python environment.
+# PlatformIO runs in its own venv which may be missing them.
 try:
     import PIL
+    if sys.version_info < (3, 11):
+        import tomli  # noqa: F401
 except ImportError:
-    print("Asset converter: Pillow not found — installing into PlatformIO Python...")
-    subprocess.check_call([python, "-m", "pip", "install", "Pillow"])
+    reqs = os.path.join(project_dir, "tools", "requirements.txt")
+    print("Asset converter: installing required packages...")
+    subprocess.check_call([python, "-m", "pip", "install", "-r", reqs])
 
-# Step 1 — generate palette headers
+# Step 1 -- generate palette headers
 result = subprocess.run(
     [
         python,
@@ -27,9 +38,12 @@ result = subprocess.run(
 )
 if result.returncode != 0:
     print("ERROR: Palette generator failed (see output above)")
-    env.Exit(result.returncode)
+    if _pio_mode:
+        env.Exit(result.returncode)
+    else:
+        sys.exit(result.returncode)
 
-# Step 2 — convert image assets
+# Step 2 -- convert image assets
 result = subprocess.run(
     [
         python,
@@ -40,7 +54,9 @@ result = subprocess.run(
     ],
     cwd=project_dir,
 )
-
 if result.returncode != 0:
     print("ERROR: Asset converter failed (see output above)")
-    env.Exit(result.returncode)
+    if _pio_mode:
+        env.Exit(result.returncode)
+    else:
+        sys.exit(result.returncode)

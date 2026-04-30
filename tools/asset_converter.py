@@ -286,6 +286,7 @@ def emit_auto_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
     content = (
         f"// AUTO-GENERATED — do not edit\n"
         f"// Source: {source_rel}  [{w}W x {h}H]\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"\n"
         f"{pixel_block}\n"
@@ -309,6 +310,7 @@ def emit_named_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
     content = (
         f"// AUTO-GENERATED — do not edit\n"
         f"// Source: {source_rel}  [{w}W x {h}H]  palette: {palette_name}\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"#include \"{include_path}\"\n"
         f"\n"
@@ -339,6 +341,7 @@ def emit_auto_gif_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
     content = (
         f"// AUTO-GENERATED — do not edit\n"
         f"// Source: {source_rel}  [{w}W x {h}H]  {n} frames\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"\n"
         f"{palette_block}\n"
@@ -373,6 +376,7 @@ def emit_named_gif_cpp(output_dir: str, stem: str, symbol: str, source_rel: str,
     content = (
         f"// AUTO-GENERATED — do not edit\n"
         f"// Source: {source_rel}  [{w}W x {h}H]  {n} frames  palette: {palette_name}\n"
+        f"// #include may look errored in IDEs — it is auto-included by CMake\n"
         f"#include \"WE_Assets.hpp\"\n"
         f"#include \"{include_path}\"\n"
         f"\n"
