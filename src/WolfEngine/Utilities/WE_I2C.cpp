@@ -5,6 +5,7 @@
 #include <string.h>
 
 i2c_master_bus_handle_t I2CManager::s_busHandle = nullptr;
+SemaphoreHandle_t       I2CManager::s_busMutex  = nullptr;
 
 // ── Lifecycle ──────────────────────────────────────────────
 
@@ -54,6 +55,9 @@ esp_err_t I2CManager::begin() {
         return err;
     }
 
+    s_busMutex = xSemaphoreCreateMutex();
+    assert(s_busMutex != nullptr);
+
     WE_LOGI("I2C", "begin: OK");
     return ESP_OK;
 }
@@ -62,11 +66,20 @@ void I2CManager::end() {
     WE_LOGI("I2C", "end: deleting master bus");
     i2c_del_master_bus(s_busHandle);
     s_busHandle = nullptr;
+    if (s_busMutex) {
+        vSemaphoreDelete(s_busMutex);
+        s_busMutex = nullptr;
+    }
 }
 
 // ── Device registration ────────────────────────────────────
 
 i2c_master_dev_handle_t I2CManager::addDevice(uint8_t addr) {
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE) {
+        WE_LOGE("I2C", "addDevice 0x%02X: mutex timeout", addr);
+        return nullptr;
+    }
+
     i2c_device_config_t dev_cfg = {};
     dev_cfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
     dev_cfg.device_address  = addr;
@@ -74,6 +87,8 @@ i2c_master_dev_handle_t I2CManager::addDevice(uint8_t addr) {
 
     i2c_master_dev_handle_t handle = nullptr;
     esp_err_t err = i2c_master_bus_add_device(s_busHandle, &dev_cfg, &handle);
+    xSemaphoreGive(s_busMutex);
+
     if (err != ESP_OK) {
         WE_LOGE("I2C", "addDevice 0x%02X failed: %s", addr, esp_err_to_name(err));
         return nullptr;
@@ -85,20 +100,26 @@ i2c_master_dev_handle_t I2CManager::addDevice(uint8_t addr) {
 // ── Low-level primitives ───────────────────────────────────
 
 esp_err_t I2CManager::write(i2c_master_dev_handle_t dev, const uint8_t* data, size_t len) {
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE)
+        return ESP_ERR_TIMEOUT;
 #if WE_I2C_DEBUG_VERBOSE
     WE_LOGI("I2C", "write  len=%u", (unsigned)len);
 #endif
     esp_err_t err = i2c_master_transmit(dev, data, len, TIMEOUT_MS);
+    xSemaphoreGive(s_busMutex);
     if (err != ESP_OK)
         WE_LOGE("I2C", "write len=%u FAILED: %s", (unsigned)len, esp_err_to_name(err));
     return err;
 }
 
 esp_err_t I2CManager::read(i2c_master_dev_handle_t dev, uint8_t* data, size_t len) {
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE)
+        return ESP_ERR_TIMEOUT;
 #if WE_I2C_DEBUG_VERBOSE
     WE_LOGI("I2C", "read   len=%u", (unsigned)len);
 #endif
     esp_err_t err = i2c_master_receive(dev, data, len, TIMEOUT_MS);
+    xSemaphoreGive(s_busMutex);
     if (err != ESP_OK)
         WE_LOGE("I2C", "read  len=%u FAILED: %s", (unsigned)len, esp_err_to_name(err));
     return err;
@@ -106,9 +127,6 @@ esp_err_t I2CManager::read(i2c_master_dev_handle_t dev, uint8_t* data, size_t le
 
 esp_err_t I2CManager::writeReg(i2c_master_dev_handle_t dev, uint8_t reg,
                                 const uint8_t* data, size_t len) {
-#if WE_I2C_DEBUG_VERBOSE
-    WE_LOGI("I2C", "writeReg reg=0x%02X len=%u", reg, (unsigned)len);
-#endif
     // Prepend reg byte to data in a stack buffer.
     // 64 bytes covers all in-engine single-register writes.
     uint8_t buf[64];
@@ -118,7 +136,14 @@ esp_err_t I2CManager::writeReg(i2c_master_dev_handle_t dev, uint8_t reg,
     }
     buf[0] = reg;
     if (len > 0) memcpy(buf + 1, data, len);
+
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE)
+        return ESP_ERR_TIMEOUT;
+#if WE_I2C_DEBUG_VERBOSE
+    WE_LOGI("I2C", "writeReg reg=0x%02X len=%u", reg, (unsigned)len);
+#endif
     esp_err_t err = i2c_master_transmit(dev, buf, len + 1, TIMEOUT_MS);
+    xSemaphoreGive(s_busMutex);
     if (err != ESP_OK)
         WE_LOGE("I2C", "writeReg reg=0x%02X len=%u FAILED: %s", reg, (unsigned)len, esp_err_to_name(err));
     return err;
@@ -126,10 +151,13 @@ esp_err_t I2CManager::writeReg(i2c_master_dev_handle_t dev, uint8_t reg,
 
 esp_err_t I2CManager::readReg(i2c_master_dev_handle_t dev, uint8_t reg,
                                uint8_t* data, size_t len) {
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE)
+        return ESP_ERR_TIMEOUT;
 #if WE_I2C_DEBUG_VERBOSE
     WE_LOGI("I2C", "readReg  reg=0x%02X len=%u", reg, (unsigned)len);
 #endif
     esp_err_t err = i2c_master_transmit_receive(dev, &reg, 1, data, len, TIMEOUT_MS);
+    xSemaphoreGive(s_busMutex);
     if (err != ESP_OK)
         WE_LOGE("I2C", "readReg  reg=0x%02X len=%u FAILED: %s", reg, (unsigned)len, esp_err_to_name(err));
     return err;
@@ -138,10 +166,13 @@ esp_err_t I2CManager::readReg(i2c_master_dev_handle_t dev, uint8_t reg,
 esp_err_t I2CManager::transmitReceive(i2c_master_dev_handle_t dev,
                                        const uint8_t* tx, size_t tx_len,
                                        uint8_t* rx, size_t rx_len) {
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE)
+        return ESP_ERR_TIMEOUT;
 #if WE_I2C_DEBUG_VERBOSE
     WE_LOGI("I2C", "transmitReceive tx=%u rx=%u", (unsigned)tx_len, (unsigned)rx_len);
 #endif
     esp_err_t err = i2c_master_transmit_receive(dev, tx, tx_len, rx, rx_len, TIMEOUT_MS);
+    xSemaphoreGive(s_busMutex);
     if (err != ESP_OK)
         WE_LOGE("I2C", "transmitReceive tx=%u rx=%u FAILED: %s",
                 (unsigned)tx_len, (unsigned)rx_len, esp_err_to_name(err));
@@ -151,12 +182,20 @@ esp_err_t I2CManager::transmitReceive(i2c_master_dev_handle_t dev,
 // ── Probe ──────────────────────────────────────────────────
 
 esp_err_t I2CManager::probe(uint8_t addr) {
-    return i2c_master_probe(s_busHandle, addr, TIMEOUT_MS);
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE)
+        return ESP_ERR_TIMEOUT;
+    esp_err_t err = i2c_master_probe(s_busHandle, addr, TIMEOUT_MS);
+    xSemaphoreGive(s_busMutex);
+    return err;
 }
 
 // ── Scan ───────────────────────────────────────────────────
 
 void I2CManager::scan() {
+    if (xSemaphoreTake(s_busMutex, pdMS_TO_TICKS(MUTEX_TIMEOUT_MS)) != pdTRUE) {
+        WE_LOGE("I2C", "scan: mutex timeout");
+        return;
+    }
     WE_LOGI("I2C", "scan: probing addresses 0x01-0x7E...");
     int found = 0;
     for (uint8_t addr = 1; addr < 127; addr++) {
@@ -166,6 +205,7 @@ void I2CManager::scan() {
         }
     }
     WE_LOGI("I2C", "scan: done — %d device(s) found", found);
+    xSemaphoreGive(s_busMutex);
 }
 
 // ── Diagnostics ────────────────────────────────────────────

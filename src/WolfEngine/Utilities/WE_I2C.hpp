@@ -1,16 +1,19 @@
 #pragma once
 #include <driver/i2c_master.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "WolfEngine/Settings/WE_Settings.hpp"
 
 // ─────────────────────────────────────────────────────────────
-//  I2CManager — static I2C bus manager
+//  I2CManager — static, thread-safe I2C bus manager
 //
 //  Provides device registration and low-level read/write
-//  primitives for any I2C device.
+//  primitives for any I2C device. All public operations are
+//  serialized via a FreeRTOS mutex; safe to call from multiple
+//  tasks simultaneously.
 //
 //  Notes:
 //  - Call only after WolfEngine has been initialized.
-//  - Do not call from multiple tasks simultaneously.
 //  - Each device must call addDevice() once (typically in begin())
 //    to obtain a handle used for all subsequent transactions.
 // ─────────────────────────────────────────────────────────────
@@ -24,6 +27,10 @@ public:
     // Timeout for any single bus transaction in milliseconds.
     // 10 ms is generous enough for clock-stretching devices while still catching hung buses.
     static constexpr int        TIMEOUT_MS = 10;
+
+    // Timeout waiting to acquire the bus mutex. Must be greater than TIMEOUT_MS
+    // so a task already holding the lock can always complete its transaction first.
+    static constexpr int        MUTEX_TIMEOUT_MS = 100;
 
     // Register a device at the given 7-bit address at FREQ_HZ speed.
     // Call once per device in its begin() before any transactions.
@@ -72,5 +79,6 @@ private:
     static esp_err_t begin();
     static void end();
     static i2c_master_bus_handle_t s_busHandle;
+    static SemaphoreHandle_t       s_busMutex;
     I2CManager() = delete;
 };
